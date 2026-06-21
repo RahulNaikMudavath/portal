@@ -7,6 +7,10 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTasks from "./pages/admin/AdminTasks";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import { ThemeProvider } from "./context/ThemeContext";
+import Dashboard from "./pages/client/Dashboard";
+import MyTasks from "./pages/client/MyTasks";
+import Submissions from "./pages/client/Submissions";
+import Profile from "./pages/client/Profile";
 
 function App() {
   return (
@@ -15,6 +19,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/client/dashboard" element={<Dashboard />} />
+          <Route path="/client/submissions" element={<Submissions />} />
+          <Route path="/client/tasks" element={<MyTasks />} />
+          <Route path="/client/profile" element={<Profile />} />
           <Route path="/admin/dashboard" element={
             <ProtectedRoute role="admin">
               <AdminDashboard />
@@ -35,6 +43,10 @@ function App() {
               <ClientDashboard />
             </ProtectedRoute>
           } />
+          <Route
+              path="/client/dashboard"
+              element={<Dashboard />}
+/>
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
