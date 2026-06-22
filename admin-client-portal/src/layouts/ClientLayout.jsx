@@ -1,6 +1,6 @@
 import { useState } from "react";
-import ClientSidebar from "../components/client/ClientSidebar";
-import ClientNavbar from "../components/client/ClientNavbar";
+import ClientSidebar from "../components/cleint/ClientSidebar";
+import ClientNavbar from "../components/cleint/ClientNavbar";
 
 function ClientLayout({ children }) {
   const [open, setOpen] = useState(false);

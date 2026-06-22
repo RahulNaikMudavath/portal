@@ -58,9 +58,13 @@ exports.getTasks = async (req, res) => {
     let tasks;
 
     if (req.user.role === "admin") {
-      tasks = await Task.find().populate("assignedTo", "name email");
+      tasks = await Task.find()
+        .populate("assignedTo", "name email")
+        .sort({ createdAt: -1 });
     } else {
-      tasks = await Task.find({ assignedTo: req.user.id });
+      tasks = await Task.find({
+        assignedTo: req.user.id
+      }).sort({ createdAt: -1 });
     }
 
     res.json(tasks);
@@ -83,6 +87,8 @@ exports.completeTask = async (req, res) => {
     // Only assigned client can complete
     if (task.assignedTo.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not your task" });
+      console.log("TASK ASSIGNED TO:", task.assignedTo.toString());
+console.log("CURRENT USER:", req.user.id);
     }
 
     task.status = "completed";
