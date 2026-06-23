@@ -27,7 +27,7 @@ exports.createTask = async (req, res) => {
     });
 
     // 📢 Create notification for assigned client
-    await Notification.create({
+    const notification = await Notification.create({
       userId: assignedTo,
       type: "task_created",
       message: `New task assigned: ${title}`,
@@ -36,13 +36,7 @@ exports.createTask = async (req, res) => {
     });
 
     // 🔔 Real-time socket event
-    io.emit("newNotification", {
-      userId: assignedTo,
-      type: "task_created",
-      message: `New task assigned: ${title}`,
-      taskId: task._id,
-      createdAt: new Date()
-    });
+    io.emit("newNotification", notification);
 
     res.status(201).json(task);
 
@@ -135,7 +129,7 @@ const fileUrls = req.files?.map(file => file.path) || [];
     });
 
     // 📢 Create notification for admin/creator
-    await Notification.create({
+    const notification = await Notification.create({
       userId: task.createdBy,
       type: "task_submitted",
       message: `Task submitted for review: ${task.title}`,
@@ -144,13 +138,7 @@ const fileUrls = req.files?.map(file => file.path) || [];
     });
 
     // 🔔 Real-time socket event
-    io.emit("newNotification", {
-      userId: task.createdBy,
-      type: "task_submitted",
-      message: `Task submitted for review: ${task.title}`,
-      taskId: task._id,
-      createdAt: new Date()
-    });
+    io.emit("newNotification", notification);
 
     res.json({
       message: "Work submitted successfully",
@@ -243,7 +231,7 @@ exports.reviewTask = async (req, res) => {
       ? `Task approved: ${task.title}` 
       : `Task needs revision: ${task.title}`;
 
-    await Notification.create({
+    const notification = await Notification.create({
       userId: task.assignedTo,
       type: notificationType,
       message: messageText,
@@ -252,13 +240,7 @@ exports.reviewTask = async (req, res) => {
     });
 
     // 🔔 Real-time socket event
-    io.emit("newNotification", {
-      userId: task.assignedTo,
-      type: notificationType,
-      message: messageText,
-      taskId: task._id,
-      createdAt: new Date()
-    });
+    io.emit("newNotification", notification);
 
     res.json({
       message: `Task ${status}`,

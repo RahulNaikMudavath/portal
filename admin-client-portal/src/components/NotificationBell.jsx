@@ -1,24 +1,74 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
 import io from "socket.io-client";
+import socket from "../socket";
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [arrivalMessage, setArrivalMessage] = useState("");
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
+    socket.on("newNotification", (notification) => {
+
+    const user = JSON.parse(
+      localStorage.getItem("user")
+    );
+
+    if (
+      notification.userId === user._id
+    ) {
+      setNotifications(prev => [
+        notification,
+        ...prev
+      ]);
+    }
+
+  });
+
+  return () => {
+    socket.off("newNotification");
+  };
+
+}, []);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    const currentUserId = parsedUser?._id || parsedUser?.id || null;
+
     fetchNotifications();
 
     // 🔌 Connect to socket for real-time notifications
     const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000");
 
     socket.on("newNotification", (notification) => {
+      if (!currentUserId || String(notification.userId) !== String(currentUserId)) {
+        return;
+      }
+
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
+      setArrivalMessage(notification.message || "New notification received");
+
+      window.clearTimeout(window.__notificationArrivalTimeout);
+      window.__notificationArrivalTimeout = window.setTimeout(() => {
+        setArrivalMessage("");
+      }, 3500);
     });
 
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
       socket.disconnect();
     };
   }, []);
@@ -70,7 +120,7 @@ function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -85,6 +135,12 @@ function NotificationBell() {
       </button>
 
       {/* Notification Dropdown */}
+      {arrivalMessage && (
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl bg-slate-900/95 px-4 py-3 text-sm text-white shadow-2xl backdrop-blur-lg z-50">
+          {arrivalMessage}
+        </div>
+      )}
+
       {isOpen && (
         <div className="absolute right-0 mt-2 w-96 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl shadow-2xl z-50">
           {/* Header */}

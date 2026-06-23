@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ClientSidebar from "../components/cleint/ClientSidebar";
 import ClientNavbar from "../components/cleint/ClientNavbar";
+import NotificationBell from "../components/NotificationBell";
 
 function ClientLayout({ children }) {
   const [open, setOpen] = useState(false);
