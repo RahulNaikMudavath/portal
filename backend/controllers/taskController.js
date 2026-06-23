@@ -118,7 +118,9 @@ exports.submitTask = async (req, res) => {
       return res.status(403).json({ message: "Not your task" });
     }
 
-    const fileUrls = req.files?.map(file => file.path) || [];
+    console.log("FILES RECEIVED:", req.files);
+
+const fileUrls = req.files?.map(file => file.path) || [];
 
     task.submissionFiles = fileUrls;
     task.status = "completed"; // mark completed
