@@ -9,9 +9,14 @@ const {
   getClients,
   getNotifications,
   markNotificationAsRead,
-  markAllNotificationsAsRead
+  markAllNotificationsAsRead,
+  getProfile,
+  updateProfile
 } = require("../controllers/userController");
 
+// 👤 Profile Routes
+router.get("/profile", protect, getProfile);
+router.put("/profile", protect, updateProfile);
 
 // 👑 Admin → get all users
 router.get("/", protect, isAdmin, getAllUsers);
@@ -23,9 +28,17 @@ router.get("/clients", protect, isAdmin, getClients);
 router.get("/notifications/list", protect, getNotifications);
 
 // ✅ Mark single notification as read
-router.put("/notifications/:notificationId/read", protect, markNotificationAsRead);
+router.put(
+  "/notifications/:notificationId/read",
+  protect,
+  markNotificationAsRead
+);
 
 // ✅ Mark all notifications as read
-router.put("/notifications/read-all", protect, markAllNotificationsAsRead);
+router.put(
+  "/notifications/read-all",
+  protect,
+  markAllNotificationsAsRead
+);
 
 module.exports = router;

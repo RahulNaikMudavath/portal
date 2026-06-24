@@ -85,3 +85,60 @@ exports.markAllNotificationsAsRead = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// 👤 Get Logged In User Profile
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("GET PROFILE ERROR:", error);
+
+    res.status(500).json({
+      error: error.message
+    });
+  }
+};
+
+// ✏️ Update Logged In User Profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, phone, city, company, address } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (city !== undefined) user.city = city;
+    if (company !== undefined) user.company = company;
+    if (address !== undefined) user.address = address;
+
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select("-password");
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error("UPDATE PROFILE ERROR:", error);
+
+    res.status(500).json({
+      error: error.message
+    });
+  }
+};

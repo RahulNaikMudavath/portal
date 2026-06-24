@@ -50,20 +50,21 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
   if (this.role === "client" && !this.rollNumber) {
     let rollNumber;
     let exists = true;
 
     while (exists) {
       rollNumber = generateClientRollNumber();
-      exists = await mongoose.models.User.exists({ rollNumber });
+
+      exists = await mongoose.models.User.exists({
+        rollNumber
+      });
     }
 
     this.rollNumber = rollNumber;
   }
-
-  next();
 });
 
 module.exports = mongoose.model("User", userSchema);
