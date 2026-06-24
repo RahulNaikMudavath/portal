@@ -11,6 +11,7 @@ import Dashboard from "./pages/client/Dashboard";
 import MyTasks from "./pages/client/MyTasks";
 import Submissions from "./pages/client/Submissions";
 import Profile from "./pages/client/Profile";
+import AdminProfile from "./pages/admin/AdminProfile";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/client/submissions" element={<Submissions />} />
           <Route path="/client/tasks" element={<MyTasks />} />
           <Route path="/client/profile" element={<Profile />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
           <Route path="/admin/dashboard" element={
             <ProtectedRoute role="admin">
               <AdminDashboard />

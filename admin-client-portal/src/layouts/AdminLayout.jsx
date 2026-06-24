@@ -1,21 +1,22 @@
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
-import NotificationBell from "../components/NotificationBell";
 
 function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text transition-colors duration-300">
-        <NotificationBell />
       {/* Sidebar */}
       <Sidebar open={open} setOpen={setOpen} />
 
-      {/* Main */}
-      <div className="flex-1">
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
         <Navbar setOpen={setOpen} />
-        <div className="p-4 md:p-6">{children}</div>
+
+        <main className="p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
