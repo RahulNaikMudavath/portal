@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import { getTasks, reviewTask } from "../../services/taskService";
 import TaskComments from "../../components/comments/TaskComments";
@@ -33,6 +33,14 @@ const formatDateTime = (date) => {
 function AdminTasks() {
   const [tasks, setTasks] = useState([]);
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [reviewFilter, setReviewFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+
   const fetchTasks = async () => {
     try {
       const res = await getTasks();
@@ -46,14 +54,17 @@ function AdminTasks() {
       console.error("Fetch tasks error:", err);
     }
   };
+
+  // Updates overdue status automatically every second
   useEffect(() => {
-  const clockInterval = setInterval(() => {
-    setCurrentTime(Date.now());
-  }, 1000);
+    const clockInterval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
 
-  return () => clearInterval(clockInterval);
-}, []);
+    return () => clearInterval(clockInterval);
+  }, []);
 
+  // Fetches backend changes automatically every 30 seconds
   useEffect(() => {
     fetchTasks();
 
@@ -62,9 +73,90 @@ function AdminTasks() {
     return () => clearInterval(interval);
   }, []);
 
+  const filteredTasks = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    const priorityRank = {
+      high: 1,
+      medium: 2,
+      low: 3,
+    };
+
+    return [...tasks]
+      .filter((task) => {
+        const taskTitle = (task.title || "").toLowerCase();
+        const clientName = (task.assignedTo?.name || "").toLowerCase();
+
+        const matchesSearch =
+          !normalizedSearch ||
+          taskTitle.includes(normalizedSearch) ||
+          clientName.includes(normalizedSearch);
+
+        const matchesStatus =
+          statusFilter === "all" || task.status === statusFilter;
+
+        const matchesReview =
+          reviewFilter === "all" ||
+          (task.reviewStatus || "pending") === reviewFilter;
+
+        const matchesPriority =
+          priorityFilter === "all" ||
+          (task.priority || "medium") === priorityFilter;
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesReview &&
+          matchesPriority
+        );
+      })
+      .sort((a, b) => {
+        if (sortBy === "deadline") {
+          const aDeadline = a.deadline
+            ? new Date(a.deadline).getTime()
+            : Number.MAX_SAFE_INTEGER;
+
+          const bDeadline = b.deadline
+            ? new Date(b.deadline).getTime()
+            : Number.MAX_SAFE_INTEGER;
+
+          return aDeadline - bDeadline;
+        }
+
+        if (sortBy === "priority") {
+          return (
+            priorityRank[a.priority || "medium"] -
+            priorityRank[b.priority || "medium"]
+          );
+        }
+
+        if (sortBy === "oldest") {
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+  }, [
+    tasks,
+    searchTerm,
+    statusFilter,
+    reviewFilter,
+    priorityFilter,
+    sortBy,
+  ]);
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setReviewFilter("all");
+    setPriorityFilter("all");
+    setSortBy("newest");
+  };
+
   return (
     <AdminLayout>
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      {/* Page heading */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-3xl font-bold text-white">
             Task Review Center
@@ -75,11 +167,75 @@ function AdminTasks() {
           </p>
         </div>
 
-        <span className="text-sm text-slate-400">
-          {tasks.length} total tasks
+        <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-300">
+          {filteredTasks.length} of {tasks.length} tasks
         </span>
       </div>
 
+      {/* Search, filter and sorting panel */}
+      <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search task or client..."
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-indigo-500"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
+          >
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="in-progress">In progress</option>
+            <option value="completed">Completed</option>
+          </select>
+
+          <select
+            value={reviewFilter}
+            onChange={(event) => setReviewFilter(event.target.value)}
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
+          >
+            <option value="all">All reviews</option>
+            <option value="pending">Review pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
+          <select
+            value={priorityFilter}
+            onChange={(event) => setPriorityFilter(event.target.value)}
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
+          >
+            <option value="all">All priorities</option>
+            <option value="high">High priority</option>
+            <option value="medium">Medium priority</option>
+            <option value="low">Low priority</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="deadline">Deadline closest</option>
+            <option value="priority">High priority first</option>
+          </select>
+        </div>
+
+        <button
+          onClick={clearFilters}
+          className="mt-3 text-sm font-semibold text-indigo-400 transition hover:text-indigo-300"
+        >
+          Clear all filters
+        </button>
+      </div>
+
+      {/* Task content */}
       {tasks.length === 0 ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
           <h3 className="text-lg font-semibold text-white">No tasks yet</h3>
@@ -88,15 +244,32 @@ function AdminTasks() {
             Tasks created for clients will appear here.
           </p>
         </div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
+          <h3 className="text-lg font-semibold text-white">
+            No matching tasks
+          </h3>
+
+          <p className="mt-2 text-slate-400">
+            Try changing or clearing your filters.
+          </p>
+
+          <button
+            onClick={clearFilters}
+            className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition hover:bg-indigo-700"
+          >
+            Clear filters
+          </button>
+        </div>
       ) : (
         <div className="grid gap-5">
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <TaskRow
-  key={task._id}
-  task={task}
-  refreshTasks={fetchTasks}
-  currentTime={currentTime}
-/>
+              key={task._id}
+              task={task}
+              refreshTasks={fetchTasks}
+              currentTime={currentTime}
+            />
           ))}
         </div>
       )}
@@ -104,7 +277,7 @@ function AdminTasks() {
   );
 }
 
-function TaskRow({ task, refreshTasks, currentTime })  {
+function TaskRow({ task, refreshTasks, currentTime }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -172,7 +345,7 @@ function TaskRow({ task, refreshTasks, currentTime })  {
       ? "bg-blue-500/20 text-blue-400"
       : "bg-green-500/20 text-green-400";
 
-const overdue = isOverdue(task, currentTime);
+  const overdue = isOverdue(task, currentTime);
   const priority = task.priority || "medium";
 
   return (
@@ -189,7 +362,6 @@ const overdue = isOverdue(task, currentTime);
             {task.description || "No description provided."}
           </p>
 
-          {/* Priority + deadline */}
           <div className="mt-4 flex flex-wrap gap-2">
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold ${getPriorityStyle(
@@ -322,7 +494,6 @@ const overdue = isOverdue(task, currentTime);
         </div>
       )}
 
-      {/* Task discussion */}
       <TaskComments taskId={task._id} />
 
       {task.status === "completed" && task.reviewStatus === "pending" && (
