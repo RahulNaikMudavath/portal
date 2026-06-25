@@ -19,6 +19,18 @@ app.set("io", io);
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+
+  socket.on("join_room", (userId) => {
+    if (!userId) return;
+
+    socket.join(userId.toString());
+
+    console.log(`User joined room: ${userId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
 });
 
 app.use(cors());
@@ -33,9 +45,11 @@ const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const userRoutes = require("./routes/userRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const commentRoutes = require("./routes/commentRoutes");  
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/comments", commentRoutes);
 
 
 app.use("/api/auth", authRoutes);

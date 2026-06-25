@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import { getTasks, reviewTask } from "../../services/taskService";
+import TaskComments from "../../components/comments/TaskComments";
 
 const getPriorityStyle = (priority) => {
   if (priority === "high") {
@@ -301,7 +302,9 @@ const overdue = isOverdue(task, currentTime);
 
       {task.submissionFiles?.length > 0 && (
         <div className="mt-5">
-          <h4 className="mb-2 font-semibold text-white">Submitted Files</h4>
+          <h4 className="mb-2 font-semibold text-white">
+            Submitted Files
+          </h4>
 
           <div className="flex flex-col gap-2">
             {task.submissionFiles.map((file, index) => (
@@ -318,6 +321,9 @@ const overdue = isOverdue(task, currentTime);
           </div>
         </div>
       )}
+
+      {/* Task discussion */}
+      <TaskComments taskId={task._id} />
 
       {task.status === "completed" && task.reviewStatus === "pending" && (
         <div className="mt-5 flex gap-3">

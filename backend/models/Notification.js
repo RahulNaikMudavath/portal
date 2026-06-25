@@ -7,10 +7,16 @@ const notificationSchema = new mongoose.Schema({
     required: true
   },
   type: {
-    type: String,
-    enum: ["task_created", "task_submitted", "task_approved", "task_rejected", "task_started"],
-    required: true
-  },
+  type: String,
+  enum: [
+    "task_assigned",
+    "task_submitted",
+    "task_approved",
+    "task_rejected",
+    "task_comment",
+  ],
+  required: true,
+},
   message: {
     type: String,
     required: true

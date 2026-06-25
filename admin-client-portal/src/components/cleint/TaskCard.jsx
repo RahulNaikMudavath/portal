@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { startTask } from "../../services/taskService";
 import UploadModal from "./UploadModal";
+import TaskComments from "../../components/comments/TaskComments";
 
 const getDeadlineInfo = (deadline, currentTime) => {
   if (!deadline) return null;
@@ -268,6 +269,8 @@ function TaskCard({ task }) {
           </button>
         )}
       </div>
+
+      <TaskComments taskId={task._id} />
 
       {showUpload && (
         <UploadModal

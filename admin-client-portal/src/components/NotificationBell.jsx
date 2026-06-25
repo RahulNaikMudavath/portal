@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
 import { io } from "socket.io-client";
+import socket from "../socket";
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -19,6 +20,27 @@ function NotificationBell() {
       console.error("Failed to fetch notifications:", error);
     }
   };
+
+  useEffect(() => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user._id || user.id;
+
+  if (!userId) return;
+
+  const joinUserRoom = () => {
+    socket.emit("join_room", userId);
+  };
+
+  if (socket.connected) {
+    joinUserRoom();
+  }
+
+  socket.on("connect", joinUserRoom);
+
+  return () => {
+    socket.off("connect", joinUserRoom);
+  };
+}, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
