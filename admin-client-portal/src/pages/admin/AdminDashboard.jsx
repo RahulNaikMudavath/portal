@@ -4,25 +4,24 @@ import { getTasks } from "../../services/taskService";
 import { getClients } from "../../services/userService";
 import API from "../../services/api";
 import ReviewModal from "../../components/ReviewModal";
+import AnalyticsOverview from "../../components/analytics/AnalyticsOverview";
 
 function AdminDashboard() {
-  const [stats, setStats] = useState({});
   const [tasks, setTasks] = useState([]);
   const [clients, setClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [clientsLoading, setClientsLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
-      const [statsRes, tasksRes, clientsRes] = await Promise.all([
-        API.get("/api/tasks/stats"),
+      const [tasksRes, clientsRes] = await Promise.all([
         getTasks(),
         getClients(),
       ]);
 
-      setStats(statsRes.data);
       setTasks(tasksRes.data);
       setClients(clientsRes.data);
     } catch (error) {
@@ -33,13 +32,9 @@ function AdminDashboard() {
   };
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      await fetchDashboardData();
-    };
+    fetchDashboardData();
 
-    loadDashboardData();
-
-    const interval = setInterval(loadDashboardData, 30000);
+    const interval = setInterval(fetchDashboardData, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -85,114 +80,222 @@ function AdminDashboard() {
     (task) => task.status === "completed"
   );
 
+  const recentActivities = [...tasks]
+    .sort((a, b) => {
+      const firstDate = new Date(
+        a.submittedAt || a.startedAt || a.updatedAt || a.createdAt
+      );
+
+      const secondDate = new Date(
+        b.submittedAt || b.startedAt || b.updatedAt || b.createdAt
+      );
+
+      return secondDate - firstDate;
+    })
+    .slice(0, 8)
+    .map((task) => {
+      let title = `Created and assigned task: ${task.title}`;
+      let icon = "➕";
+      let date = task.createdAt;
+
+      if (task.reviewStatus === "approved") {
+        title = `Approved task: ${task.title}`;
+        icon = "✅";
+        date = task.updatedAt || task.submittedAt || task.createdAt;
+      } else if (task.reviewStatus === "rejected") {
+        title = `Rejected task: ${task.title}`;
+        icon = "↩️";
+        date = task.updatedAt || task.submittedAt || task.createdAt;
+      } else if (task.status === "completed") {
+        title = `Submitted task: ${task.title}`;
+        icon = "📤";
+        date = task.submittedAt || task.updatedAt || task.createdAt;
+      } else if (task.status === "in-progress") {
+        title = `Started task: ${task.title}`;
+        icon = "▶️";
+        date = task.startedAt || task.updatedAt || task.createdAt;
+      }
+
+      return {
+        id: task._id,
+        title,
+        icon,
+        date,
+        clientName: task.assignedTo?.name || "Unassigned client",
+      };
+    });
+
   return (
     <>
       <AdminLayout>
-        <div className="mb-7">
-          <h2 className="text-3xl font-bold text-light-text dark:text-dark-text">
-            Dashboard
-          </h2>
+        <div className="space-y-10">
+          {/* Main Analytics */}
+          <AnalyticsOverview />
 
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
-            Manage clients, track work, and review submissions.
-          </p>
-        </div>
+          {/* Dashboard heading */}
+          <div>
+            <h2 className="text-3xl font-bold text-light-text dark:text-dark-text">
+              Workspace Management
+            </h2>
 
-        {/* Statistics */}
-        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card title="Total Tasks" value={stats.total || 0} />
-          <Card title="Pending" value={stats.pending || 0} />
-          <Card title="In Progress" value={stats.inProgress || 0} />
-          <Card title="Completed" value={stats.completed || 0} />
-        </div>
-
-        {/* Client Directory */}
-        <section className="mb-10">
-          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
-                Client Directory
-              </h3>
-
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Search clients by name or unique client ID.
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="Search name or client ID"
-                className="w-full rounded-xl border border-light-border bg-light-card px-4 py-3 text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80"
-              />
-
-              <button
-                onClick={handleSearch}
-                className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
-              >
-                Search
-              </button>
-            </div>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">
+              Manage clients, track work, and review submissions.
+            </p>
           </div>
 
-          {clientsLoading ? (
-            <EmptyBox text="Loading clients..." />
-          ) : clients.length === 0 ? (
-            <EmptyBox text="No clients found." />
-          ) : (
+          {/* Collapsible Recent Activity */}
+          <section className="rounded-2xl border border-light-border bg-light-card shadow-sm dark:border-dark-border dark:bg-dark-card">
+            <button
+              onClick={() => setShowActivity((current) => !current)}
+              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+            >
+              <div>
+                <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+                  Recent Activity
+                </h3>
+
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Latest updates across tasks, submissions, and reviews.
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="hidden text-xs text-gray-500 dark:text-gray-400 sm:block">
+                  Auto refreshes every 30 sec
+                </span>
+
+                <span className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white">
+                  {showActivity ? "Hide ▲" : "Show ▼"}
+                </span>
+              </div>
+            </button>
+
+            {showActivity && (
+              <div className="border-t border-light-border px-5 pb-5 pt-4 dark:border-dark-border">
+                {recentActivities.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No recent activity yet.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {recentActivities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="flex items-start gap-4 rounded-xl border border-light-border bg-light-bg p-4 dark:border-dark-border dark:bg-dark-bg"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-lg">
+                          {activity.icon}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="font-semibold text-light-text dark:text-dark-text">
+                            {activity.title}
+                          </p>
+
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Client: {activity.clientName}
+                          </p>
+
+                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(activity.date).toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* Client Directory */}
+          <section>
+            <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+                  Client Directory
+                </h3>
+
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Search clients by name or unique client ID.
+                </p>
+              </div>
+
+              <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search name or client ID"
+                  className="w-full rounded-xl border border-light-border bg-light-card px-4 py-3 text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80"
+                />
+
+                <button
+                  onClick={handleSearch}
+                  className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+
+            {clientsLoading ? (
+              <EmptyBox text="Loading clients..." />
+            ) : clients.length === 0 ? (
+              <EmptyBox text="No clients found." />
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {clients.slice(0, 8).map((client) => (
+                  <ClientCard key={client._id} client={client} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Active Tasks */}
+          <section>
+            <SectionHeader
+              title="Active Tasks"
+              subtitle="Tasks that are pending or currently in progress."
+            />
+
             <div className="grid gap-4 lg:grid-cols-2">
-              {clients.slice(0, 8).map((client) => (
-                <ClientCard key={client._id} client={client} />
-              ))}
+              {activeTasks.length === 0 ? (
+                <EmptyBox text="No active tasks." />
+              ) : (
+                activeTasks.slice(0, 6).map((task) => (
+                  <TaskCard
+                    key={task._id}
+                    task={task}
+                    onView={handleViewTask}
+                  />
+                ))
+              )}
             </div>
-          )}
-        </section>
+          </section>
 
-        {/* Active Tasks */}
-        <section className="mb-10">
-          <SectionHeader
-            title="Active Tasks"
-            subtitle="Tasks that are pending or currently in progress."
-          />
+          {/* Completed Tasks */}
+          <section>
+            <SectionHeader
+              title="Task History"
+              subtitle="Completed tasks and reviewed submissions."
+            />
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            {activeTasks.length === 0 ? (
-              <EmptyBox text="No active tasks." />
-            ) : (
-              activeTasks.slice(0, 6).map((task) => (
-                <TaskCard
-                  key={task._id}
-                  task={task}
-                  onView={handleViewTask}
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Completed Tasks */}
-        <section>
-          <SectionHeader
-            title="Task History"
-            subtitle="Completed tasks and reviewed submissions."
-          />
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            {completedTasks.length === 0 ? (
-              <EmptyBox text="No completed tasks yet." />
-            ) : (
-              completedTasks.slice(0, 6).map((task) => (
-                <TaskCard
-                  key={task._id}
-                  task={task}
-                  onView={handleViewTask}
-                />
-              ))
-            )}
-          </div>
-        </section>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {completedTasks.length === 0 ? (
+                <EmptyBox text="No completed tasks yet." />
+              ) : (
+                completedTasks.slice(0, 6).map((task) => (
+                  <TaskCard
+                    key={task._id}
+                    task={task}
+                    onView={handleViewTask}
+                  />
+                ))
+              )}
+            </div>
+          </section>
+        </div>
       </AdminLayout>
 
       {showReviewModal && selectedTask && (
@@ -206,20 +309,6 @@ function AdminDashboard() {
         />
       )}
     </>
-  );
-}
-
-function Card({ title, value }) {
-  return (
-    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm dark:border-dark-border dark:bg-dark-card">
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-        {title}
-      </p>
-
-      <p className="mt-2 text-3xl font-bold text-light-text dark:text-dark-text">
-        {value}
-      </p>
-    </div>
   );
 }
 
