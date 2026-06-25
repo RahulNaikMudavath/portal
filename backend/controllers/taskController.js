@@ -8,7 +8,7 @@ const Notification = require("../models/Notification");
 // 👑 Admin creates task
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, assignedTo } = req.body;
+const { title, description, assignedTo, priority, deadline } = req.body;
     const io = req.app.get("io");
 
     // 🔥 IMPORTANT CHECK
@@ -19,12 +19,14 @@ exports.createTask = async (req, res) => {
     const fileUrls = req.files?.map(file => file.path) || [];
 
     const task = await Task.create({
-      title,
-      description,
-      assignedTo,
-      createdBy: req.user.id,
-      files: fileUrls
-    });
+  title,
+  description,
+  assignedTo,
+  priority: priority || "medium",
+  deadline: deadline || null,
+  createdBy: req.user.id,
+  files: fileUrls,
+});
     await Activity.create({
   user: req.user.id,
   action: `Created and assigned task: ${title}`,
