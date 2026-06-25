@@ -1,307 +1,373 @@
-﻿import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getTasks, startTask, submitTask } from "../../services/taskService";
-import { ThemeToggle } from "../../components/ThemeToggle";
-import NotificationBell from "../../components/NotificationBell";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import ClientLayout from "../../layouts/ClientLayout";
+import { getTasks } from "../../services/taskService";
 
 function ClientDashboard() {
-  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
-  const [user, setUser] = useState({ name: "Client", email: "", role: "client" });
-  const [showProfile, setShowProfile] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(0);
+
+  const fetchTasks = async () => {
+    try {
+      const res = await getTasks();
+
+      const sortedTasks = [...res.data].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setTasks(sortedTasks);
+    } catch (error) {
+      console.error("Could not load client dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      const res = await getTasks();
-      setTasks(res.data);
+    const loadDashboard = async () => {
+      await fetchTasks();
+      setNow(Date.now());
     };
 
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse user info", error);
-      }
-    }
+    loadDashboard();
 
-    fetchTasks();
+    const taskRefresh = setInterval(fetchTasks, 30000);
+    const timerRefresh = setInterval(() => setNow(Date.now()), 1000);
+
+    return () => {
+      clearInterval(taskRefresh);
+      clearInterval(timerRefresh);
+    };
   }, []);
 
-  const handleTaskSubmit = async (taskId, formData) => {
-    try {
-      await submitTask(taskId, formData);
-      // Refresh tasks after submission
-      const res = await getTasks();
-      setTasks(res.data);
-      alert("Work submitted successfully!");
-    } catch (error) {
-      console.error("Failed to submit task:", error);
-      alert("Failed to submit work. Please try again.");
-    }
-  };
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const handleTaskStart = async (taskId) => {
-    try {
-      await startTask(taskId);
-      // Refresh tasks after starting
-      const res = await getTasks();
-      setTasks(res.data);
-    } catch (error) {
-      console.error("Failed to start task:", error);
-      alert("Failed to start task. Please try again.");
-    }
-  };
+  const pendingTasks = useMemo(
+    () => tasks.filter((task) => task.status === "pending"),
+    [tasks]
+  );
 
-  const pendingCount = tasks.filter((task) => task.status === "pending").length;
-  const inProgressCount = tasks.filter((task) => task.status === "in-progress").length;
-  const completedCount = tasks.filter((task) => task.status === "completed").length;
+  const inProgressTasks = useMemo(
+    () => tasks.filter((task) => task.status === "in-progress"),
+    [tasks]
+  );
+
+  const completedTasks = useMemo(
+    () => tasks.filter((task) => task.status === "completed"),
+    [tasks]
+  );
+
+  const activeTask = inProgressTasks[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-8 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-200/50 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-slate-900/40">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">Client Portal</p>
-                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">Modern work management for clients</h1>
-                </div>
-                <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800 dark:bg-blue-900/80 dark:text-blue-200">
-                  Welcome back
-                </span>
-              </div>
+    <ClientLayout>
+      <div className="mx-auto max-w-7xl">
+        {/* Welcome */}
+        <section className="mb-7 rounded-3xl border border-slate-800 bg-slate-900 p-6 md:p-8">
+          <p className="text-xs font-bold uppercase tracking-[0.35em] text-indigo-300">
+            Client Workspace
+          </p>
 
-              <nav className="flex flex-wrap gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-                <a href="#home" className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-500 dark:hover:text-blue-300">Home</a>
-                <a href="#about" className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-500 dark:hover:text-blue-300">About Us</a>
-                <a href="#services" className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-500 dark:hover:text-blue-300">Services</a>
-              </nav>
+          <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white md:text-4xl">
+                Welcome back, {user.name || "Client"} 👋
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-slate-400">
+                Track your assigned work, continue active tasks, and submit
+                files for review from one workspace.
+              </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 justify-between sm:justify-end">
-              <NotificationBell />
-              <ThemeToggle />
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfile((prev) => !prev)}
-                  className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
-                >
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                    {user.name?.[0]?.toUpperCase() || "C"}
-                  </span>
-                  <span>{user.name || "Client"}</span>
-                </button>
-
-                {showProfile && (
-                  <div className="absolute right-0 z-20 mt-2 w-52 rounded-3xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-950">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Account</p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{user.email || "No email available"}</p>
-                    <div className="mt-3 space-y-2">
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="w-full rounded-full bg-red-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Link
+              to="/client/tasks"
+              className="inline-flex w-fit items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+            >
+              View All Tasks →
+            </Link>
           </div>
-        </div>
+        </section>
 
-        <section id="home" className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-sm uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">Dashboard overview</p>
-                <h2 className="mt-3 text-4xl font-semibold text-slate-900 dark:text-white">Hello, {user.name || "Client"}</h2>
-                <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Review your active tasks, submit work, and stay connected with your admin support resources in one clean workspace.
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <StatCard label="Pending" value={pendingCount} accent="yellow" />
-                <StatCard label="In Progress" value={inProgressCount} accent="blue" />
-                <StatCard label="Completed" value={completedCount} accent="green" />
-              </div>
+        {/* Stats */}
+        <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            title="Pending"
+            value={pendingTasks.length}
+            icon="📌"
+            tone="yellow"
+          />
+
+          <StatCard
+            title="In Progress"
+            value={inProgressTasks.length}
+            icon="⏱️"
+            tone="blue"
+          />
+
+          <StatCard
+            title="Completed"
+            value={completedTasks.length}
+            icon="✅"
+            tone="green"
+          />
+        </section>
+
+        {/* Main active task */}
+        <section className="mb-8">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                Current Work
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-400">
+                Your active task and persistent work timer.
+              </p>
             </div>
+
+            <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-300">
+              {tasks.length} total tasks
+            </span>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {loading ? (
+            <EmptyState text="Loading your workspace..." />
+          ) : activeTask ? (
+            <ActiveTaskCard task={activeTask} now={now} />
+          ) : (
+            <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900 p-8 text-center">
+              <div className="text-4xl">🚀</div>
+
+              <h3 className="mt-4 text-xl font-bold text-white">
+                No task is currently running
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-lg text-slate-400">
+                Start one of your pending tasks to activate the work timer.
+              </p>
+
+              <Link
+                to="/client/tasks"
+                className="mt-5 inline-flex rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+              >
+                Go to My Tasks
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {/* Pending + Recent work */}
+        <section className="grid gap-8 xl:grid-cols-2">
+          <div>
+            <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Your Tasks</h2>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  Everything you need to complete your assignments at a glance.
+                <h2 className="text-xl font-bold text-white">
+                  Pending Tasks
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  Tasks waiting for you to begin.
                 </p>
               </div>
-              <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                {tasks.length} total tasks
+
+              <Link
+                to="/client/tasks"
+                className="text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+              >
+                See all →
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {pendingTasks.length === 0 ? (
+                <EmptyState text="No pending tasks right now." />
+              ) : (
+                pendingTasks.slice(0, 3).map((task) => (
+                  <SmallTaskCard key={task._id} task={task} />
+                ))
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  Recently Completed
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  Your latest submitted work.
+                </p>
+              </div>
+
+              <Link
+                to="/client/submissions"
+                className="text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+              >
+                View submissions →
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {completedTasks.length === 0 ? (
+                <EmptyState text="No completed tasks yet." />
+              ) : (
+                completedTasks.slice(0, 3).map((task) => (
+                  <SmallTaskCard key={task._id} task={task} completed />
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+    </ClientLayout>
+  );
+}
+
+function ActiveTaskCard({ task, now }) {
+  const seconds = task.startedAt
+    ? Math.max(
+        0,
+        Math.floor((now - new Date(task.startedAt).getTime()) / 1000)
+      )
+    : 0;
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-slate-900 to-indigo-950/40">
+      <div className="p-6 md:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 flex flex-wrap gap-3">
+              <span className="rounded-full bg-blue-500/20 px-3 py-1 text-sm font-semibold text-blue-300">
+                ● In Progress
+              </span>
+
+              <span className="rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-semibold text-indigo-200">
+                Persistent Timer Active
               </span>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {tasks.map((task) => (
-                <TaskCard key={task._id} task={task} onSubmit={(formData) => handleTaskSubmit(task._id, formData)} onStart={() => handleTaskStart(task._id)} />
-              ))}
-            </div>
+            <h3 className="text-2xl font-bold text-white md:text-3xl">
+              {task.title}
+            </h3>
+
+            <p className="mt-3 text-slate-300">
+              {task.description || "No task description provided."}
+            </p>
+
+            <p className="mt-5 text-sm text-slate-400">
+              Started:{" "}
+              <span className="font-semibold text-slate-200">
+                {task.startedAt
+                  ? new Date(task.startedAt).toLocaleString()
+                  : "Not available"}
+              </span>
+            </p>
           </div>
-          <aside className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 mb-4">Quick profile</p>
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-600 text-xl font-semibold text-white">
-                  {user.name?.[0]?.toUpperCase() || "C"}
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-slate-900 dark:text-white">{user.name || "Client User"}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{user.email || "No email available"}</p>
-                </div>
-              </div>
-              <div className="mt-5 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                <div>
-                  <p className="font-semibold">Role</p>
-                  <p>{user.role || "Client"}</p>
-                </div>
-              </div>
-            </div>
 
-            <div id="about" className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 mb-4">About Us</p>
-              <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Welcome to your client portal where task management, progress tracking, and support are organized for a smooth experience.
-              </p>
-            </div>
+          <div className="min-w-[260px] rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-5">
+            <p className="text-sm font-semibold text-emerald-300">
+              LIVE WORK TIME
+            </p>
 
-            <div id="services" className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 mb-4">Services</p>
-              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                <li className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950">Task assignment and progress updates</li>
-                <li className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950">Secure file submission</li>
-                <li className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-950">Client support and review status</li>
-              </ul>
-            </div>
-          </aside>
-        </section>
+            <p className="mt-2 font-mono text-4xl font-bold tracking-wider text-white">
+              {formatTime(seconds)}
+            </p>
 
-        <section id="contact" className="mt-8 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Need help?</h2>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Contact your admin or use the support links to get help with your tasks and portal access.</p>
-        </section>
+            <p className="mt-2 text-sm text-emerald-100/70">
+              Timer stops automatically when you submit.
+            </p>
+
+            <Link
+              to="/client/tasks"
+              className="mt-5 flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700"
+            >
+              Upload Work
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value, accent }) {
-  const accentColors = {
-    yellow: "text-yellow-800 bg-yellow-100",
-    blue: "text-blue-800 bg-blue-100",
-    green: "text-green-800 bg-green-100",
-  };
-
+function SmallTaskCard({ task, completed = false }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-      <p className="text-sm uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`mt-4 text-4xl font-semibold ${accentColors[accent]}`}>{value}</p>
-    </div>
-  );
-}
-
-function TaskCard({ task, onStart, onSubmit }) {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setSelectedFile(file);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedFile) return;
-
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append("files", selectedFile);
-      await onSubmit(formData);
-      setSelectedFile(null);
-      // Reset file input
-      const fileInput = document.getElementById(`file-${task._id}`);
-      if (fileInput) fileInput.value = "";
-    } catch (error) {
-      console.error("Failed to submit task:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm transition duration-300 hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:border-slate-700">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white break-words">{task.title}</h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{task.description || "No description yet."}</p>
+          <h3 className="truncate text-lg font-bold text-white">
+            {task.title}
+          </h3>
+
+          <p className="mt-1 line-clamp-2 text-sm text-slate-400">
+            {task.description || "No description provided."}
+          </p>
         </div>
-        <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${
-          task.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-          task.status === "in-progress" ? "bg-blue-100 text-blue-800" :
-          "bg-green-100 text-green-800"
-        }`}>
-          {task.status}
+
+        <span
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+            completed
+              ? "bg-emerald-500/15 text-emerald-300"
+              : "bg-yellow-500/15 text-yellow-300"
+          }`}
+        >
+          {completed ? task.reviewStatus || "completed" : "pending"}
         </span>
       </div>
-      <div className="mt-5 space-y-4 text-sm text-slate-600 dark:text-slate-300">
-        <p><span className="font-semibold">Assigned by:</span> {task.assignedTo?.name || "Unassigned"}</p>
-        <p><span className="font-semibold">Review status:</span> {task.reviewStatus || "pending"}</p>
-      </div>
-      <div className="mt-5 space-y-3">
-        {task.status === "pending" && (
-          <button onClick={onStart} className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
-            Start Task
-          </button>
-        )}
-        {task.status === "in-progress" && (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Upload work</label>
-            <input
-              id={`file-${task._id}`}
-              type="file"
-              className="w-full rounded-2xl border border-slate-300 bg-white p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              onChange={handleFileChange}
-            />
-            {selectedFile && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Selected: {selectedFile.name}
-              </p>
-            )}
-            <button
-              onClick={handleSubmit}
-              disabled={!selectedFile || isSubmitting}
-              className="w-full rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Submitting..." : "Submit Work"}
-            </button>
-          </div>
-        )}
-        {task.status === "completed" && (
-          <div className="rounded-2xl bg-green-50 p-3 dark:bg-green-950">
-            <p className="text-sm font-semibold text-green-800 dark:text-green-200">
-              ✅ Work submitted successfully
-            </p>
-            <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-              Waiting for admin review
-            </p>
-          </div>
-        )}
+
+      <div className="mt-4 border-t border-slate-800 pt-4 text-sm text-slate-400">
+        Assigned by:{" "}
+        <span className="font-semibold text-slate-200">
+          {task.createdBy?.name || "Admin"}
+        </span>
       </div>
     </div>
   );
+}
+
+function StatCard({ title, value, icon, tone }) {
+  const tones = {
+    yellow: "border-yellow-500/25 bg-yellow-500/10 text-yellow-300",
+    blue: "border-blue-500/25 bg-blue-500/10 text-blue-300",
+    green: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+  };
+
+  return (
+    <div className={`rounded-2xl border p-5 ${tones[tone]}`}>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em]">
+          {title}
+        </p>
+
+        <span className="text-2xl">{icon}</span>
+      </div>
+
+      <p className="mt-4 text-4xl font-bold text-white">{value}</p>
+    </div>
+  );
+}
+
+function EmptyState({ text }) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-400">
+      {text}
+    </div>
+  );
+}
+
+function formatTime(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
 }
 
 export default ClientDashboard;

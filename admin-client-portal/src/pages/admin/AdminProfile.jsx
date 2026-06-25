@@ -17,30 +17,30 @@ export default function AdminProfile() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetchProfile();
+    const loadProfile = async () => {
+      try {
+        setLoading(true);
+
+        const res = await API.get("/api/users/profile");
+
+        setProfile({
+          name: res.data.name || "",
+          email: res.data.email || "",
+          phone: res.data.phone || "",
+          city: res.data.city || "",
+          company: res.data.company || "",
+          address: res.data.address || "",
+        });
+      } catch (error) {
+        console.error("Admin profile fetch error:", error);
+        setMessage("Failed to load profile.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
   }, []);
-
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-
-      const res = await API.get("/api/users/profile");
-
-      setProfile({
-        name: res.data.name || "",
-        email: res.data.email || "",
-        phone: res.data.phone || "",
-        city: res.data.city || "",
-        company: res.data.company || "",
-        address: res.data.address || "",
-      });
-    } catch (error) {
-      console.error("Admin profile fetch error:", error);
-      setMessage("Failed to load profile.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleChange = (e) => {
     setProfile((prev) => ({

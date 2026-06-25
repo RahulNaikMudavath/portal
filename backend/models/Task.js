@@ -22,6 +22,20 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
   },
+  startedAt: {
+  type: Date,
+  default: null
+},
+
+submittedAt: {
+  type: Date,
+  default: null
+},
+
+totalTimeSpent: {
+  type: Number,
+  default: 0
+},
 
   files: [String], // later for uploads
 

@@ -18,7 +18,8 @@ const {
   deleteTask,
   submitTask,
   reviewTask,
-  getStats
+  getStats,
+  getRecentActivities
 } = require("../controllers/taskController");
 
 
@@ -57,12 +58,10 @@ router.put(
 router.put("/:id/review", protect, isAdmin, reviewTask);
 
 
-// ✏️ Admin updates task
-router.put("/:id", protect, isAdmin, updateTask);
-
-
 // ❌ Admin deletes task
 router.delete("/:id", protect, isAdmin, deleteTask);
+
+router.get("/activities/recent", protect, isAdmin, getRecentActivities);
 
 // 📁 Get task files
 router.get("/:id/files", protect, async (req, res) => {

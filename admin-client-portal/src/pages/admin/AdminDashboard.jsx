@@ -10,38 +10,52 @@ function AdminDashboard() {
   const [tasks, setTasks] = useState([]);
   const [clients, setClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [clientsLoading, setClientsLoading] = useState(false);
+  const [clientsLoading, setClientsLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const res = await API.get("/api/tasks/stats");
-      setStats(res.data);
-    };
+  const fetchDashboardData = async () => {
+    try {
+      const [statsRes, tasksRes, clientsRes] = await Promise.all([
+        API.get("/api/tasks/stats"),
+        getTasks(),
+        getClients(),
+      ]);
 
-    const fetchTasks = async () => {
-      const res = await getTasks();
-      setTasks(res.data);
-    };
-
-    const fetchClients = async () => {
-      setClientsLoading(true);
-      const res = await getClients();
-      setClients(res.data);
+      setStats(statsRes.data);
+      setTasks(tasksRes.data);
+      setClients(clientsRes.data);
+    } catch (error) {
+      console.error("Dashboard fetch error:", error);
+    } finally {
       setClientsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      await fetchDashboardData();
     };
 
-    fetchStats();
-    fetchTasks();
-    fetchClients();
+    loadDashboardData();
+
+    const interval = setInterval(loadDashboardData, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleSearch = async () => {
-    setClientsLoading(true);
-    const res = await getClients(searchTerm.trim());
-    setClients(res.data);
-    setClientsLoading(false);
+    try {
+      setClientsLoading(true);
+
+      const res = await getClients(searchTerm.trim());
+
+      setClients(res.data);
+    } catch (error) {
+      console.error("Client search error:", error);
+    } finally {
+      setClientsLoading(false);
+    }
   };
 
   const handleSearchKeyDown = (event) => {
@@ -56,45 +70,67 @@ function AdminDashboard() {
   };
 
   const handleReviewTask = (taskId, status) => {
-    setTasks(tasks.map(task =>
-      task._id === taskId
-        ? { ...task, reviewStatus: status }
-        : task
-    ));
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task._id === taskId ? { ...task, reviewStatus: status } : task
+      )
+    );
+
+    fetchDashboardData();
   };
 
-  const activeTasks = tasks.filter(task => task.status !== "completed");
-  const completedTasks = tasks.filter(task => task.status === "completed");
+  const activeTasks = tasks.filter((task) => task.status !== "completed");
+
+  const completedTasks = tasks.filter(
+    (task) => task.status === "completed"
+  );
 
   return (
     <>
       <AdminLayout>
-        <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
+        <div className="mb-7">
+          <h2 className="text-3xl font-bold text-light-text dark:text-dark-text">
+            Dashboard
+          </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card title="Total" value={stats.total} />
-          <Card title="Pending" value={stats.pending} />
-          <Card title="In Progress" value={stats.inProgress} />
-          <Card title="Completed" value={stats.completed} />
+          <p className="mt-2 text-gray-500 dark:text-gray-400">
+            Manage clients, track work, and review submissions.
+          </p>
         </div>
 
+        {/* Statistics */}
+        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card title="Total Tasks" value={stats.total || 0} />
+          <Card title="Pending" value={stats.pending || 0} />
+          <Card title="In Progress" value={stats.inProgress || 0} />
+          <Card title="Completed" value={stats.completed || 0} />
+        </div>
+
+        {/* Client Directory */}
         <section className="mb-10">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="text-xl font-semibold">Client Directory</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Search clients by name or unique client ID.</p>
+              <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+                Client Directory
+              </h3>
+
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Search clients by name or unique client ID.
+              </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+
+            <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
               <input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(event) => setSearchTerm(event.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Search name or client ID"
-                className="w-full sm:w-80 px-4 py-3 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-xl text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-light-border bg-light-card px-4 py-3 text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80"
               />
+
               <button
                 onClick={handleSearch}
-                className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all duration-200"
+                className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
               >
                 Search
               </button>
@@ -102,13 +138,9 @@ function AdminDashboard() {
           </div>
 
           {clientsLoading ? (
-            <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-6 rounded-xl text-center text-gray-500 dark:text-gray-400">
-              Loading clients…
-            </div>
+            <EmptyBox text="Loading clients..." />
           ) : clients.length === 0 ? (
-            <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-6 rounded-xl text-center text-gray-500 dark:text-gray-400">
-              No clients found.
-            </div>
+            <EmptyBox text="No clients found." />
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {clients.slice(0, 8).map((client) => (
@@ -118,37 +150,45 @@ function AdminDashboard() {
           )}
         </section>
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Active Tasks</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Tasks in progress</span>
-          </div>
+        {/* Active Tasks */}
+        <section className="mb-10">
+          <SectionHeader
+            title="Active Tasks"
+            subtitle="Tasks that are pending or currently in progress."
+          />
 
-          <div className="grid gap-4 lg:grid-cols-2 mb-8">
+          <div className="grid gap-4 lg:grid-cols-2">
             {activeTasks.length === 0 ? (
-              <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-6 rounded-xl">
-                No active tasks.
-              </div>
+              <EmptyBox text="No active tasks." />
             ) : (
               activeTasks.slice(0, 6).map((task) => (
-                <TaskCard key={task._id} task={task} onView={handleViewTask} />
+                <TaskCard
+                  key={task._id}
+                  task={task}
+                  onView={handleViewTask}
+                />
               ))
             )}
           </div>
+        </section>
 
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Task History</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Completed and reviewed tasks</span>
-          </div>
+        {/* Completed Tasks */}
+        <section>
+          <SectionHeader
+            title="Task History"
+            subtitle="Completed tasks and reviewed submissions."
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
             {completedTasks.length === 0 ? (
-              <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-6 rounded-xl">
-                No completed tasks yet.
-              </div>
+              <EmptyBox text="No completed tasks yet." />
             ) : (
               completedTasks.slice(0, 6).map((task) => (
-                <TaskCard key={task._id} task={task} onView={handleViewTask} />
+                <TaskCard
+                  key={task._id}
+                  task={task}
+                  onView={handleViewTask}
+                />
               ))
             )}
           </div>
@@ -169,47 +209,130 @@ function AdminDashboard() {
   );
 }
 
+function Card({ title, value }) {
+  return (
+    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm dark:border-dark-border dark:bg-dark-card">
+      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+        {title}
+      </p>
+
+      <p className="mt-2 text-3xl font-bold text-light-text dark:text-dark-text">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SectionHeader({ title, subtitle }) {
+  return (
+    <div className="mb-4">
+      <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+        {title}
+      </h3>
+
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
+function EmptyBox({ text }) {
+  return (
+    <div className="rounded-xl border border-light-border bg-light-card p-6 text-gray-500 dark:border-dark-border dark:bg-dark-card dark:text-gray-400">
+      {text}
+    </div>
+  );
+}
+
 function ClientCard({ client }) {
   return (
-    <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h4 className="text-lg font-semibold text-light-text dark:text-dark-text">{client.name}</h4>
-          <p className="text-sm text-indigo-600 dark:text-indigo-300 font-mono font-bold">ID: {client.rollNumber || "N/A"}</p>
+    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm transition hover:shadow-md dark:border-dark-border dark:bg-dark-card">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h4 className="text-lg font-semibold text-light-text dark:text-dark-text">
+            {client.name}
+          </h4>
+
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {client.email}
+          </p>
+
+          <p className="mt-2 font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+            ID: {client.rollNumber || client._id}
+          </p>
         </div>
-        <span className="text-xs font-semibold px-3 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 rounded-full">{client.role}</span>
+
+        <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
+          {client.role || "client"}
+        </span>
       </div>
 
-      <div className="border-t border-light-border dark:border-dark-border pt-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase">Email</p>
-            <p className="text-light-text dark:text-dark-text truncate">{client.email}</p>
-          </div>
-          <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase">Phone</p>
-            <p className="text-light-text dark:text-dark-text">{client.phone || "—"}</p>
-          </div>
-          <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase">Company</p>
-            <p className="text-light-text dark:text-dark-text">{client.company || "—"}</p>
-          </div>
-          <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase">City</p>
-            <p className="text-light-text dark:text-dark-text">{client.city || "—"}</p>
-          </div>
-          {client.address && (
-            <div className="sm:col-span-2">
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase">Address</p>
-              <p className="text-light-text dark:text-dark-text text-xs">{client.address}</p>
-            </div>
-          )}
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-light-border pt-4 text-sm dark:border-dark-border">
+        <div>
+          <p className="text-gray-500 dark:text-gray-400">Phone</p>
+          <p className="mt-1 font-medium text-light-text dark:text-dark-text">
+            {client.phone || "Not added"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-gray-500 dark:text-gray-400">City</p>
+          <p className="mt-1 font-medium text-light-text dark:text-dark-text">
+            {client.city || "Not added"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskCard({ task, onView }) {
+  const isCompleted = task.status === "completed";
+
+  return (
+    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm dark:border-dark-border dark:bg-dark-card">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h4 className="truncate text-lg font-semibold text-light-text dark:text-dark-text">
+            {task.title}
+          </h4>
+
+          <p className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+            {task.description || "No description added."}
+          </p>
+        </div>
+
+        <StatusBadge status={task.status} />
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p className="text-gray-500 dark:text-gray-400">Assigned to</p>
+          <p className="mt-1 font-semibold text-light-text dark:text-dark-text">
+            {task.assignedTo?.name || "Unassigned"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-gray-500 dark:text-gray-400">Review</p>
+          <p className="mt-1 font-semibold capitalize text-light-text dark:text-dark-text">
+            {task.reviewStatus || "pending"}
+          </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-        <p>Joined: {new Date(client.createdAt).toLocaleDateString()}</p>
-        <button className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200">
+      <div className="mt-5 flex items-center justify-between border-t border-light-border pt-4 dark:border-dark-border">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {isCompleted && task.submittedAt
+            ? `Submitted: ${new Date(task.submittedAt).toLocaleDateString()}`
+            : `Created: ${new Date(task.createdAt).toLocaleDateString()}`}
+        </p>
+
+        <button
+          onClick={() => onView(task)}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+        >
           View
         </button>
       </div>
@@ -217,56 +340,21 @@ function ClientCard({ client }) {
   );
 }
 
-function TaskCard({ task, onView }) {
-  return (
-    <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-lg font-semibold text-light-text dark:text-dark-text">{task.title}</h4>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-            task.status === "pending" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
-            task.status === "in-progress" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" :
-            "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-          }`}>
-            {task.status}
-          </span>
-          {task.reviewStatus && (
-            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-              task.reviewStatus === "approved" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" :
-              task.reviewStatus === "rejected" ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" :
-              "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-            }`}>
-              {task.reviewStatus}
-            </span>
-          )}
-        </div>
-      </div>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{task.description || "No description provided."}</p>
-      <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
-        <p><span className="font-semibold">Assigned to:</span> {task.assignedTo?.name || "Unassigned"}</p>
-        <p><span className="font-semibold">Review:</span> {task.reviewStatus || "pending"}</p>
-        <p><span className="font-semibold">Created:</span> {new Date(task.createdAt).toLocaleDateString()}</p>
-      </div>
-      {task.status === "completed" && (
-        <div className="mt-4 pt-4 border-t border-light-border dark:border-dark-border">
-          <button
-            onClick={() => onView(task)}
-            className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors duration-200"
-          >
-            View & Review
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+function StatusBadge({ status }) {
+  const styles = {
+    pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-300",
+    "in-progress": "bg-blue-500/15 text-blue-600 dark:text-blue-300",
+    completed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
+  };
 
-function Card({ title, value }) {
   return (
-    <div className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border p-5 rounded-xl shadow">
-      <h3 className="text-gray-500 dark:text-gray-400">{title}</h3>
-      <p className="text-2xl font-bold text-light-text dark:text-dark-text">{value || 0}</p>
-    </div>
+    <span
+      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+        styles[status] || "bg-gray-500/15 text-gray-600 dark:text-gray-300"
+      }`}
+    >
+      {status || "pending"}
+    </span>
   );
 }
 

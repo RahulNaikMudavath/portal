@@ -27,3 +27,6 @@ export const submitTask = (id, data) =>
 // review task (admin)
 export const reviewTask = (id, status) =>
   API.put(`/api/tasks/${id}/review`, { status });
+
+export const getRecentActivities = () =>
+  API.get("/api/tasks/activities/recent");

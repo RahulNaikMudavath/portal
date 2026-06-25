@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
-import io from "socket.io-client";
-import socket from "../socket";
+import { io } from "socket.io-client";
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -10,38 +9,28 @@ function NotificationBell() {
   const [arrivalMessage, setArrivalMessage] = useState("");
   const wrapperRef = useRef(null);
 
-  useEffect(() => {
-    socket.on("newNotification", (notification) => {
-
-    const user = JSON.parse(
-      localStorage.getItem("user")
-    );
-
-    if (
-      notification.userId === user._id
-    ) {
-      setNotifications(prev => [
-        notification,
-        ...prev
-      ]);
+  const fetchNotifications = async () => {
+    try {
+      const res = await getNotifications();
+      setNotifications(res.data);
+      const unread = res.data.filter((n) => !n.read).length;
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
     }
-
-  });
-
-  return () => {
-    socket.off("newNotification");
   };
-
-}, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const parsedUser = storedUser ? JSON.parse(storedUser) : null;
     const currentUserId = parsedUser?._id || parsedUser?.id || null;
 
-    fetchNotifications();
+    const loadNotifications = async () => {
+      await fetchNotifications();
+    };
 
-    // 🔌 Connect to socket for real-time notifications
+    loadNotifications();
+
     const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000");
 
     socket.on("newNotification", (notification) => {
@@ -69,20 +58,10 @@ function NotificationBell() {
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      socket.off("newNotification");
       socket.disconnect();
     };
   }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await getNotifications();
-      setNotifications(res.data);
-      const unread = res.data.filter((n) => !n.read).length;
-      setUnreadCount(unread);
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
-    }
-  };
 
   const handleMarkAsRead = async (notificationId) => {
     try {

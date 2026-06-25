@@ -25,6 +25,11 @@ exports.createTask = async (req, res) => {
       createdBy: req.user.id,
       files: fileUrls
     });
+    await Activity.create({
+  user: req.user.id,
+  action: `Created and assigned task: ${title}`,
+  taskId: task._id
+});
 
     // 📢 Create notification for assigned client
     const notification = await Notification.create({
@@ -117,8 +122,17 @@ exports.submitTask = async (req, res) => {
 const fileUrls = req.files?.map(file => file.path) || [];
 
     task.submissionFiles = fileUrls;
-    task.status = "completed"; // mark completed
-    task.reviewStatus = "pending";
+task.status = "completed";
+task.reviewStatus = "pending";
+task.submittedAt = new Date();
+
+// Calculate final time only if the task was started
+if (task.startedAt) {
+  const millisecondsSpent =
+    task.submittedAt.getTime() - task.startedAt.getTime();
+
+  task.totalTimeSpent = Math.floor(millisecondsSpent / 1000);
+}
 
     await task.save();
 
@@ -163,20 +177,31 @@ exports.startTask = async (req, res) => {
       return res.status(403).json({ message: "Not your task" });
     }
 
+    // Prevent restarting a task that already started
+    if (task.startedAt) {
+      return res.status(400).json({
+        message: "Task has already been started"
+      });
+    }
+
     task.status = "in-progress";
+    task.startedAt = new Date();
+
     await task.save();
+    await Activity.create({
+  user: req.user.id,
+  action: "Started task",
+  taskId: task._id
+});
 
     res.json({
-      message: "Task started",
+      message: "Task started successfully",
       task
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-  console.log("START TASK API HIT");
 };
-
 
 // ✏️ Update Task (Admin only)
 exports.updateTask = async (req, res) => {
@@ -224,6 +249,11 @@ exports.reviewTask = async (req, res) => {
     task.reviewStatus = status;
 
     await task.save();
+    await Activity.create({
+  user: req.user.id,
+  action: status === "approved" ? "Approved task" : "Rejected task",
+  taskId: task._id
+});
 
     // 📢 Create notification for client
     const notificationType = status === "approved" ? "task_approved" : "task_rejected";
@@ -293,5 +323,26 @@ exports.getStats = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// 📜 Get recent activity for admin dashboard
+exports.getRecentActivities = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Admin only"
+      });
+    }
+
+    const activities = await Activity.find()
+      .sort({ createdAt: -1 })
+      .limit(12);
+
+    res.json(activities);
+  } catch (error) {
+    res.status(500).json({
+      error: error.message
+    });
   }
 };
