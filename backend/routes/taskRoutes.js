@@ -18,6 +18,7 @@ const {
   deleteTask,
   submitTask,
   reviewTask,
+  updateTaskProgress,
   getStats,
   getRecentActivities
 } = require("../controllers/taskController");
@@ -46,7 +47,10 @@ router.get("/stats", protect, isAdmin, getStats);
 // ✅ Client completes task
 router.put("/:id/complete", protect, completeTask);
 
-// 📤 Client submits task
+// � Client updates task progress
+router.put("/:taskId/progress", protect, updateTaskProgress);
+
+// �📤 Client submits task
 router.put(
   "/:id/submit",
   protect,
@@ -62,6 +66,7 @@ router.put("/:id/review", protect, isAdmin, reviewTask);
 router.delete("/:id", protect, isAdmin, deleteTask);
 
 router.get("/activities/recent", protect, isAdmin, getRecentActivities);
+
 
 // 📁 Get task files
 router.get("/:id/files", protect, async (req, res) => {

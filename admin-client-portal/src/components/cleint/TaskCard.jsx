@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { startTask } from "../../services/taskService";
 import UploadModal from "./UploadModal";
 import TaskComments from "../../components/comments/TaskComments";
+import ProgressBar from "../progress/ProgressBar";
+import ProgressTimeline from "../progress/ProgressTimeline";
 
 const getDeadlineInfo = (deadline, currentTime) => {
   if (!deadline) return null;
@@ -165,6 +167,14 @@ function TaskCard({ task }) {
                 ).toLocaleString("en-IN")}`}
           </span>
         )}
+      </div>
+
+      <div className="mt-5">
+        <ProgressBar progress={task.progress || 0} />
+
+        <div className="mt-5">
+          <ProgressTimeline updates={task.progressUpdates || []} />
+        </div>
       </div>
 
       {/* Details */}

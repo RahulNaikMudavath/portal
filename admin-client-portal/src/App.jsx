@@ -17,6 +17,7 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import MyTasks from "./pages/client/MyTasks";
 import Submissions from "./pages/client/Submissions";
 import Profile from "./pages/client/Profile";
+import WorkInbox from "./pages/admin/WorkInbox";
 
 function App() {
   return (
@@ -63,6 +64,10 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+    path="/admin/work-inbox"
+    element={<WorkInbox />}
+/>
 
           <Route
             path="/admin/activity"

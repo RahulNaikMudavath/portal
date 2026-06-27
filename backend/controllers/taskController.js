@@ -3,6 +3,96 @@ const Activity = require("../models/Activity");
 const Notification = require("../models/Notification");
 
 
+const updateTaskProgress = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { percentage, message } = req.body;
+
+    const progressValue = Number(percentage);
+
+    if (
+      Number.isNaN(progressValue) ||
+      progressValue < 0 ||
+      progressValue > 100
+    ) {
+      return res.status(400).json({
+        message: "Progress must be between 0 and 100",
+      });
+    }
+
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const loggedInUserId = req.user.id;
+
+    const isAssignedClient =
+      task.assignedTo &&
+      task.assignedTo.toString() === loggedInUserId.toString();
+
+    if (!isAssignedClient) {
+      return res.status(403).json({
+        message: "Only the assigned client can update progress",
+      });
+    }
+
+    if (task.status === "completed") {
+      return res.status(400).json({
+        message: "Completed tasks cannot be updated",
+      });
+    }
+
+    task.progress = progressValue;
+
+    task.progressUpdates.push({
+      percentage: progressValue,
+      message: (message || "").trim(),
+      updatedBy: loggedInUserId,
+    });
+
+    await task.save();
+
+    const updatedTask = await Task.findById(taskId)
+      .populate("assignedTo", "name email")
+      .populate("progressUpdates.updatedBy", "name email role");
+
+   const notification = await Notification.create({
+  userId: task.createdBy,
+  type: "task_progress",
+  message: `Client updated progress to ${progressValue}% on task: ${task.title}`,
+  taskId: task._id,
+  actionBy: loggedInUserId,
+});
+
+    const io = req.app.get("io");
+
+    if (io) {
+      io.to(task.createdBy.toString()).emit(
+        "new_notification",
+        notification
+      );
+
+      io.to(task.createdBy.toString()).emit("task_progress_updated", {
+        taskId: task._id.toString(),
+        task: updatedTask,
+      });
+    }
+
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error("Update task progress error:", error);
+
+    res.status(500).json({
+      message: "Failed to update task progress",
+    });
+  }
+};
+
+
 
 
 // 👑 Admin creates task
@@ -348,3 +438,6 @@ exports.getRecentActivities = async (req, res) => {
     });
   }
 };
+
+exports.updateTaskProgress = updateTaskProgress;
+

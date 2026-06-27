@@ -7,6 +7,7 @@ const links = [
   { label: "Tasks", path: "/admin/tasks", icon: "📋" },
   { label: "Create Task", path: "/admin/create", icon: "➕" },
   { label: "Activity", path: "/admin/activity", icon: "📜" },
+  { label: "Work Inbox", path: "/admin/work-inbox", icon: "📥" },
   { label: "Profile", path: "/admin/profile", icon: "👤" },
 ];
 

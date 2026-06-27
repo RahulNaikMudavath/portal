@@ -14,6 +14,7 @@ const notificationSchema = new mongoose.Schema({
     "task_approved",
     "task_rejected",
     "task_comment",
+    "task_progress",
   ],
   required: true,
 },

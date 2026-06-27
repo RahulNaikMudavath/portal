@@ -47,12 +47,14 @@ const userRoutes = require("./routes/userRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const commentRoutes = require("./routes/commentRoutes");  
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const workRequestRoutes = require("./routes/workRequestRoutes");
 
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/workrequests", workRequestRoutes);
 
 
 app.use("/api/auth", authRoutes);

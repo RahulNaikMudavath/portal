@@ -5,6 +5,7 @@ import { getClients } from "../../services/userService";
 import API from "../../services/api";
 import ReviewModal from "../../components/ReviewModal";
 import AnalyticsOverview from "../../components/analytics/AnalyticsOverview";
+import AttentionCenter from "../../components/dashboard/AttentionCenter";
 
 function AdminDashboard() {
   const [tasks, setTasks] = useState([]);
@@ -131,6 +132,7 @@ function AdminDashboard() {
         <div className="space-y-10">
           {/* Main Analytics */}
           <AnalyticsOverview />
+          <AttentionCenter tasks={tasks} onOpenTask={handleViewTask} />
 
           {/* Dashboard heading */}
           <div>

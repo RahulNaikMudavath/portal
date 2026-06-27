@@ -19,17 +19,6 @@ const taskSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    priority: {
-      type: String,
-      enum: ["low", "medium", "high"],
-      default: "medium",
-    },
-
-    deadline: {
-      type: Date,
-      default: null,
-    },
-
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -42,7 +31,6 @@ const taskSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Persistent work timer fields
     startedAt: {
       type: Date,
       default: null,
@@ -58,23 +46,55 @@ const taskSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // Files attached by admin while creating the task
-    files: {
-      type: [String],
-      default: [],
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
     },
 
-    // Files submitted by the client
-    submissionFiles: {
-      type: [String],
-      default: [],
+    deadline: {
+      type: Date,
+      default: null,
     },
+
+    files: [String],
+
+    submissionFiles: [String],
 
     reviewStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+
+    progress: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+
+    progressUpdates: [
+      {
+        percentage: Number,
+
+        message: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+
+        updatedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
