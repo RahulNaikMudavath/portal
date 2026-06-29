@@ -60,14 +60,24 @@ function WorkRequestCard({
 
       </div>
 
-      <div className="mt-4">
-
-        <span
-          className="rounded-full bg-slate-700 px-3 py-1 text-xs text-white"
-        >
-          {request.status}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs text-white">
+          📄 {request.attachments?.length || 0} Files
         </span>
 
+        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs text-white">
+          💬 {request.conversation?.length || 0} Messages
+        </span>
+
+        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs text-white">
+          🏠 {request.projectType}
+        </span>
+      </div>
+
+      <div className="mt-4">
+        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs text-white">
+          {request.status}
+        </span>
       </div>
 
     </div>

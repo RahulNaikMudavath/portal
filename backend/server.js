@@ -48,11 +48,13 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const commentRoutes = require("./routes/commentRoutes");  
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const workRequestRoutes = require("./routes/workRequestRoutes");
+const workOrderRoutes = require("./routes/workOrderRoutes");
 
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/workorders", workOrderRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/workrequests", workRequestRoutes);
 

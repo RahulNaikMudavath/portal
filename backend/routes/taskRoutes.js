@@ -4,7 +4,7 @@ const Task = require("../models/Task");
 
 
 // 🔐 Middleware
-const protect = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 const { isAdmin } = require("../middleware/roleMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 

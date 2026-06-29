@@ -1,9 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const protect = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 const { isAdmin, isClient } = require("../middleware/roleMiddleware");
-
 
 // 🔒 Protected route (any logged-in user)
 router.get("/profile", protect, (req, res) => {
