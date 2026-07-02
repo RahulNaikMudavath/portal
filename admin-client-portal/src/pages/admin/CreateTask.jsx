@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
-import { getClients } from "../../services/userService";
 import { createTask } from "../../services/taskService";
 
 function CreateTask() {

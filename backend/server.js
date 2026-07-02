@@ -49,6 +49,9 @@ const commentRoutes = require("./routes/commentRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const workRequestRoutes = require("./routes/workRequestRoutes");
 const workOrderRoutes = require("./routes/workOrderRoutes");
+const engineerRoutes = require("./routes/engineerRoutes");
+const whatsappRoutes = require("./routes/whatsappRoutes");
+
 
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -57,7 +60,8 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/workorders", workOrderRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/workrequests", workRequestRoutes);
-
+app.use("/api/engineer", engineerRoutes);
+app.use("/api/whatsapp", whatsappRoutes);
 
 app.use("/api/auth", authRoutes);
 

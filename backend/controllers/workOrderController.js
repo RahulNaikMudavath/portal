@@ -3,6 +3,9 @@ const WorkRequest = require("../models/WorkRequest");
 
 exports.createWorkOrder = async (req, res) => {
   try {
+    console.log("BODY:");
+    console.log(req.body);
+
     const {
       workRequest,
       engineer,
@@ -21,20 +24,25 @@ exports.createWorkOrder = async (req, res) => {
       });
     }
 
+    console.log("Logged in user:");
+console.log(req.user);
+console.log("Assigned By:", req.user.id);
     // Create Work Order
     const workOrder = await WorkOrder.create({
-      workRequest,
-      engineer,
-      assignedBy: req.user?._id || null,
-      priority,
-      deadline,
-      estimatedBudget,
-      notes,
-    });
-
+    workRequest,
+    engineer,
+    priority,
+    deadline: deadline || null,
+    estimatedBudget,
+    notes,
+    assignedBy: req.user._id
+});
     // Update Work Request
     request.status = "assigned";
-    await request.save();
+request.assignedEngineer = engineer;
+request.convertedTask = workOrder._id;
+
+await request.save();
 
     res.status(201).json({
       message: "Work Order Created Successfully",

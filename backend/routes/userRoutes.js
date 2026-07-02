@@ -3,6 +3,7 @@ const router = express.Router();
 
 const { protect } = require("../middleware/authMiddleware");
 const { isAdmin } = require("../middleware/roleMiddleware");
+const { getEngineers } = require("../controllers/userController");
 
 const {
   getAllUsers,
@@ -23,6 +24,7 @@ router.get("/", protect, isAdmin, getAllUsers);
 
 // 👑 Admin → get only clients
 router.get("/clients", protect, isAdmin, getClients);
+router.get("/engineers", protect, getEngineers);
 
 // 📢 Get user notifications
 router.get("/notifications/list", protect, getNotifications);

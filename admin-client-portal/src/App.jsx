@@ -11,6 +11,7 @@ import AdminTasks from "./pages/admin/AdminTasks";
 import CreateTask from "./pages/admin/CreateTask";
 import AdminProfile from "./pages/admin/AdminProfile";
 import Activity from "./pages/admin/Activity";
+import WhatsAppInbox from "./pages/admin/WhatsAppInbox";
 
 // Client pages
 import ClientDashboard from "./pages/client/ClientDashboard";
@@ -64,10 +65,22 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-    path="/admin/work-inbox"
-    element={<WorkInbox />}
+<Route
+  path="/admin/work-inbox"
+  element={
+    <ProtectedRoute role="admin">
+      <WhatsAppInbox />
+    </ProtectedRoute>
+  }
 />
+          <Route
+            path="/admin/whatsapp"
+            element={
+              <ProtectedRoute role="admin">
+                <WhatsAppInbox />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/activity"

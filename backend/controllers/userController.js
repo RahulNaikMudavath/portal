@@ -106,6 +106,22 @@ exports.getProfile = async (req, res) => {
     });
   }
 };
+exports.getEngineers = async (req, res) => {
+  try {
+    const User = require("../models/User");
+
+    const engineers = await User.find(
+      { role: "client" }, // Change to "engineer" later if you add that role
+      "_id name email"
+    );
+
+    res.json(engineers);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch engineers",
+    });
+  }
+};
 
 // ✏️ Update Logged In User Profile
 exports.updateProfile = async (req, res) => {

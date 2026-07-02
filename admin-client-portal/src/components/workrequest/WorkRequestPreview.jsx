@@ -1,8 +1,11 @@
 import { useState } from "react";
 import AssignWorkModal from "./AssignWorkModal";
+import AssignEngineerModal from "./AssignEngineerModal";
+import { createWorkOrder } from "../../services/workOrderService";
 
 function WorkRequestPreview({ request }) {
     const [showAssign, setShowAssign] = useState(false);
+    const [showModal, setShowModal] = useState(false);
   if (!request) {
     return (
       <div className="flex h-full items-center justify-center rounded-2xl border border-slate-700 bg-slate-900">
@@ -286,9 +289,12 @@ Download
         <h2 className="mb-5 text-xl font-bold text-white">⚡ Quick Actions</h2>
 
         <div className="grid grid-cols-2 gap-4">
-          <button className="rounded-xl bg-blue-600 p-4 hover:bg-blue-700">
-            👷 Assign Engineer
-          </button>
+          <button
+    onClick={() => setShowModal(true)}
+    className="bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-xl"
+>
+    👷 Assign Engineer
+</button>
 
           <button className="rounded-xl bg-green-600 p-4 hover:bg-green-700">
             📞 Call Customer
@@ -313,6 +319,44 @@ Download
         open={showAssign}
         onClose={() => setShowAssign(false)}
         request={request}
+
+      />
+      <AssignEngineerModal
+    isOpen={showModal}
+    onClose={() => setShowModal(false)}
+    onAssign={async (data) => {
+
+    try {
+
+        await createWorkOrder({
+
+            workRequest: request._id,
+
+            engineer: data.engineer,
+
+            priority: data.priority,
+
+            deadline: data.deadline,
+
+            estimatedBudget: Number(data.estimatedBudget),
+
+            notes: data.notes,
+
+        });
+
+        alert("✅ Work Order Created Successfully!");
+
+        setShowModal(false);
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert("Failed to create Work Order");
+
+    }
+
+}}
       />
       <div className="mt-10">
 
