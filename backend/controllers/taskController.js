@@ -1,6 +1,7 @@
 const Task = require("../models/Task");
 const Activity = require("../models/Activity");
 const Notification = require("../models/Notification");
+const WorkRequest = require("../models/WorkRequest");
 
 
 const updateTaskProgress = async (req, res) => {
@@ -98,7 +99,7 @@ const updateTaskProgress = async (req, res) => {
 // 👑 Admin creates task
 exports.createTask = async (req, res) => {
   try {
-const { title, description, assignedTo, priority, deadline } = req.body;
+    const { title, description, assignedTo, priority, deadline, workRequestId } = req.body;
     const io = req.app.get("io");
 
     // 🔥 IMPORTANT CHECK
@@ -106,27 +107,51 @@ const { title, description, assignedTo, priority, deadline } = req.body;
       return res.status(400).json({ message: "assignedTo is required" });
     }
 
+    // If workRequestId is supplied, validate it exists first
+    let request = null;
+    if (workRequestId) {
+      request = await WorkRequest.findById(workRequestId);
+      if (!request) {
+        return res.status(404).json({
+          message: "Work Request Not Found"
+        });
+      }
+    }
+
     const fileUrls = req.files?.map(file => file.path) || [];
 
     const task = await Task.create({
-  title,
-  description,
-  assignedTo,
-  priority: priority || "medium",
-  deadline: deadline || null,
-  createdBy: req.user.id,
-  files: fileUrls,
-});
+      title,
+      description,
+      assignedTo,
+      priority: priority || "medium",
+      deadline: deadline || null,
+      createdBy: req.user.id,
+      files: fileUrls,
+    });
+
+    if (request) {
+      request.status = "assigned";
+      request.assignedEngineer = assignedTo;
+      request.convertedTask = task._id;
+      await request.save();
+
+      // Emit "workRequestAssigned" to immediately update dashboards
+      if (io) {
+        io.emit("workRequestAssigned", { workRequestId: request._id });
+      }
+    }
+
     await Activity.create({
-  user: req.user.id,
-  action: `Created and assigned task: ${title}`,
-  taskId: task._id
-});
+      user: req.user.id,
+      action: `Created and assigned task: ${title}`,
+      taskId: task._id
+    });
 
     // 📢 Create notification for assigned client
     const notification = await Notification.create({
       userId: assignedTo,
-      type: "task_created",
+      type: "task_assigned",
       message: `New task assigned: ${title}`,
       taskId: task._id,
       actionBy: req.user.id

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getEngineers } from "../../services/userService";
 
 export default function AssignEngineerModal({
@@ -7,14 +6,32 @@ export default function AssignEngineerModal({
   onClose,
   onAssign,
 }) {
-  const [formData, setFormData] = useState({
+  const initialState = {
     engineer: "",
     priority: "medium",
     deadline: "",
     estimatedBudget: "",
     notes: "",
-  });
+  };
+
+  const [formData, setFormData] = useState(initialState);
   const [engineers, setEngineers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadEngineers = async () => {
+      try {
+        const data = await getEngineers();
+        setEngineers(data);
+      } catch (err) {
+        console.error("Failed to load engineers", err);
+      }
+    };
+
+    loadEngineers();
+  }, [isOpen]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -23,69 +40,94 @@ export default function AssignEngineerModal({
     }));
   };
 
-  useEffect(() => {
-    const loadEngineers = async () => {
-      try {
-        const data = await getEngineers();
-        setEngineers(data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+  const handleSubmit = async () => {
+    if (!formData.engineer) {
+      alert("Please select an engineer.");
+      return;
+    }
 
-    loadEngineers();
-  }, []);
+    try {
+      setLoading(true);
+
+      await onAssign({
+        assignedEngineer: formData.engineer,
+        priority: formData.priority,
+        deadline: formData.deadline,
+        budget: Number(formData.estimatedBudget) || 0,
+        notes: formData.notes,
+      });
+
+      setFormData(initialState);
+
+      onClose();
+
+    } catch (err) {
+      console.error(err);
+
+      alert(
+        err.response?.data?.message ||
+          "Failed to assign engineer."
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  const handleSubmit = async () => {
-
-    if (!formData.engineer) {
-        return alert("Please select an engineer.");
-    }
-
-    await onAssign(formData);
-
-};
-
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
 
-      <div className="bg-slate-900 rounded-2xl w-[600px] p-8 border border-slate-700">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-[650px] p-8 shadow-2xl">
 
-        <h2 className="text-2xl font-bold text-white mb-8">
-          👷 Assign Work
+        <h2 className="text-3xl font-bold text-white mb-8">
+          👷 Assign Engineer
         </h2>
 
         <div className="space-y-5">
 
           <select
-  name="engineer"
-  value={formData.engineer}
-  onChange={handleChange}
->
-  <option value="">Select Engineer</option>
+            name="engineer"
+            value={formData.engineer}
+            onChange={handleChange}
+            className="w-full bg-slate-800 text-white rounded-xl p-3"
+          >
+            <option value="">
+              Select Engineer
+            </option>
 
-  {engineers.map((engineer) => (
-    <option
-      key={engineer._id}
-      value={engineer._id}
-    >
-      {engineer.name}
-    </option>
-  ))}
-</select>
+            {engineers.map((engineer) => (
+              <option
+                key={engineer._id}
+                value={engineer._id}
+              >
+                {engineer.name}
+              </option>
+            ))}
+          </select>
 
           <select
             name="priority"
             value={formData.priority}
             onChange={handleChange}
-            className="w-full p-3 rounded-xl bg-slate-800 text-white"
+            className="w-full bg-slate-800 text-white rounded-xl p-3"
           >
-            <option>low</option>
-            <option>medium</option>
-            <option>high</option>
-            <option>urgent</option>
+            <option value="low">
+              Low
+            </option>
+
+            <option value="medium">
+              Medium
+            </option>
+
+            <option value="high">
+              High
+            </option>
+
+            <option value="urgent">
+              Urgent
+            </option>
           </select>
 
           <input
@@ -93,7 +135,7 @@ export default function AssignEngineerModal({
             name="deadline"
             value={formData.deadline}
             onChange={handleChange}
-            className="w-full p-3 rounded-xl bg-slate-800 text-white"
+            className="w-full bg-slate-800 text-white rounded-xl p-3"
           />
 
           <input
@@ -102,16 +144,16 @@ export default function AssignEngineerModal({
             placeholder="Estimated Budget"
             value={formData.estimatedBudget}
             onChange={handleChange}
-            className="w-full p-3 rounded-xl bg-slate-800 text-white"
+            className="w-full bg-slate-800 text-white rounded-xl p-3"
           />
 
           <textarea
-            rows="4"
+            rows={5}
             name="notes"
             placeholder="Internal Notes"
             value={formData.notes}
             onChange={handleChange}
-            className="w-full p-3 rounded-xl bg-slate-800 text-white"
+            className="w-full bg-slate-800 text-white rounded-xl p-3 resize-none"
           />
 
         </div>
@@ -120,16 +162,20 @@ export default function AssignEngineerModal({
 
           <button
             onClick={onClose}
-            className="px-6 py-3 rounded-xl bg-slate-700"
+            disabled={loading}
+            className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white"
           >
             Cancel
           </button>
 
           <button
             onClick={handleSubmit}
-            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700"
+            disabled={loading}
+            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
           >
-            Create Work Order
+            {loading
+              ? "Creating..."
+              : "🚀 Create Work Order"}
           </button>
 
         </div>

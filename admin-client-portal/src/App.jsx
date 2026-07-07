@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import { WorkRequestProvider } from "./context/WorkRequestContext";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -19,12 +20,15 @@ import MyTasks from "./pages/client/MyTasks";
 import Submissions from "./pages/client/Submissions";
 import Profile from "./pages/client/Profile";
 import WorkInbox from "./pages/admin/WorkInbox";
+import { Navigate } from "react-router-dom";
+import CreateAIWorkRequest from "./pages/admin/CreateAIWorkRequest";
 
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
+      <WorkRequestProvider>
+        <BrowserRouter>
+          <Routes>
           {/* Public routes */}
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -81,6 +85,10 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+    path="*"
+    element={<Navigate to="/admin/dashboard" />}
+/>
 
           <Route
             path="/admin/activity"
@@ -127,11 +135,20 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+    path="/admin/create-ai-request"
+    element={
+        <ProtectedRoute role="admin">
+            <CreateAIWorkRequest />
+        </ProtectedRoute>
+    }
+/>
 
           {/* Unknown route */}
           <Route path="*" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </WorkRequestProvider>
     </ThemeProvider>
   );
 }

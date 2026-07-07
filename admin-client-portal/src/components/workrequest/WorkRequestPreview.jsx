@@ -1,10 +1,10 @@
-import { useState } from "react";
-import AssignWorkModal from "./AssignWorkModal";
 import AssignEngineerModal from "./AssignEngineerModal";
-import { createWorkOrder } from "../../services/workOrderService";
+import { convertWorkRequest } from "../../services/workRequestService";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function WorkRequestPreview({ request }) {
-    const [showAssign, setShowAssign] = useState(false);
+    const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
   if (!request) {
     return (
@@ -290,7 +290,10 @@ Download
 
         <div className="grid grid-cols-2 gap-4">
           <button
-    onClick={() => setShowModal(true)}
+    onClick={() => {
+    console.log("BUTTON CLICKED");
+    setShowModal(true);
+}}
     className="bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-xl"
 >
     👷 Assign Engineer
@@ -315,49 +318,42 @@ Download
         </div>
       </div>
 
-      <AssignWorkModal
-        open={showAssign}
-        onClose={() => setShowAssign(false)}
-        request={request}
-
-      />
+      
       <AssignEngineerModal
-    isOpen={showModal}
-    onClose={() => setShowModal(false)}
-    onAssign={async (data) => {
-
+  isOpen={showModal}
+  onClose={() => setShowModal(false)}
+  onAssign={async (data) => {
     try {
 
-        await createWorkOrder({
+      await convertWorkRequest(request._id, {
+        assignedEngineer: data.assignedEngineer,
+        priority: data.priority,
+        deadline: data.deadline,
+        budget: data.budget,
+        notes: data.notes,
+      });
 
-            workRequest: request._id,
+      alert("✅ Work Order Created Successfully!");
 
-            engineer: data.engineer,
+      setShowModal(false);
 
-            priority: data.priority,
-
-            deadline: data.deadline,
-
-            estimatedBudget: Number(data.estimatedBudget),
-
-            notes: data.notes,
-
-        });
-
-        alert("✅ Work Order Created Successfully!");
-
-        setShowModal(false);
+      navigate("/admin/tasks");
 
     } catch (err) {
 
-        console.error(err);
+      console.error(err);
 
-        alert("Failed to create Work Order");
+      alert(
+        err.response?.data?.message ||
+        "Failed to assign engineer."
+      );
+
+      throw err;
 
     }
-
-}}
-      />
+  }}
+/>
+      
       <div className="mt-10">
 
 <h2 className="text-xl font-bold text-white mb-5">
