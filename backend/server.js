@@ -51,6 +51,7 @@ const workRequestRoutes = require("./routes/workRequestRoutes");
 const workOrderRoutes = require("./routes/workOrderRoutes");
 const engineerRoutes = require("./routes/engineerRoutes");
 const whatsappRoutes = require("./routes/whatsappRoutes");
+const projectRoutes = require("./routes/projectRoutes");
 
 
 app.use("/api/users", userRoutes);
@@ -62,6 +63,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/workrequests", workRequestRoutes);
 app.use("/api/engineer", engineerRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
+app.use("/api/projects", projectRoutes);
 
 app.use("/api/auth", authRoutes);
 
@@ -71,4 +73,4 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
+}); // nodemon trigger

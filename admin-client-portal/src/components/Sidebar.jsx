@@ -4,6 +4,7 @@ function Sidebar({ open, setOpen }) {
   const location = useLocation();
 const links = [
   { label: "Dashboard", path: "/admin/dashboard", icon: "🏠" },
+  { label: "Projects", path: "/admin/projects", icon: "🏗️" },
   { label: "Tasks", path: "/admin/tasks", icon: "📋" },
   { label: "Create Task", path: "/admin/create", icon: "➕" },
   { label: "Activity", path: "/admin/activity", icon: "📜" },

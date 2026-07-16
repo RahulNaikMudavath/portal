@@ -35,8 +35,44 @@ export const submitTask = (id, data) =>
   });
 
 // review task (admin)
-export const reviewTask = (id, status) =>
-  API.put(`/api/tasks/${id}/review`, { status });
+export const reviewTask = (id, status, reason = "") =>
+  API.put(`/api/tasks/${id}/review`, { status, reason });
 
 export const getRecentActivities = () =>
   API.get("/api/tasks/activities/recent");
+
+// update progress (client)
+export const updateTaskProgress = (id, data) =>
+  API.put(`/api/tasks/${id}/progress`, data);
+
+// upload attachment (client)
+export const uploadTaskAttachment = (id, formData) =>
+  API.put(`/api/tasks/${id}/attachment`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
+
+// update visit/travel status (client)
+export const updateVisitStatus = (id, visitStatus) =>
+  API.put(`/api/tasks/${id}/visit-status`, { visitStatus });
+
+// add material (client)
+export const addMaterial = (id, material) =>
+  API.put(`/api/tasks/${id}/materials`, material);
+
+// add note (client)
+export const addTaskNote = (id, text) =>
+  API.post(`/api/tasks/${id}/notes`, { text });
+
+// edit note (client)
+export const editTaskNote = (id, noteId, text) =>
+  API.put(`/api/tasks/${id}/notes/${noteId}`, { text });
+
+// delete note (client)
+export const deleteTaskNote = (id, noteId) =>
+  API.delete(`/api/tasks/${id}/notes/${noteId}`);
+
+// submit customer sign-off (client)
+export const submitCustomerSignOff = (id, signOffData) =>
+  API.put(`/api/tasks/${id}/sign-off`, signOffData);

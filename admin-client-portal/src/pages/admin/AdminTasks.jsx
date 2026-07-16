@@ -1,519 +1,452 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import { getTasks, reviewTask } from "../../services/taskService";
+
+// Reuse engineer cards
+import TaskHeader from "../../components/engineer/TaskHeader";
+import CustomerCard from "../../components/engineer/CustomerCard";
+import AIAnalysisCard from "../../components/engineer/AIAnalysisCard";
+import ProgressCard from "../../components/engineer/ProgressCard";
+import AttachmentsCard from "../../components/engineer/AttachmentsCard";
+import NotesCard from "../../components/engineer/NotesCard";
+import MaterialsCard from "../../components/engineer/MaterialsCard";
+import PhotoGallery from "../../components/engineer/PhotoGallery";
+import TimelineCard from "../../components/engineer/TimelineCard";
+import SiteCard from "../../components/engineer/SiteCard";
+import TravelCard from "../../components/engineer/TravelCard";
 import TaskComments from "../../components/comments/TaskComments";
 
-const getPriorityStyle = (priority) => {
-  if (priority === "high") {
-    return "border border-red-500/30 bg-red-500/20 text-red-400";
-  }
+import { motion, AnimatePresence } from "framer-motion";
 
-  if (priority === "low") {
-    return "border border-green-500/30 bg-green-500/20 text-green-400";
-  }
-
-  return "border border-yellow-500/30 bg-yellow-500/20 text-yellow-400";
-};
-
-const isOverdue = (task, currentTime = Date.now()) => {
+// Helper components inside AdminTasks
+function AdminSignatureCard({ task }) {
+  if (!task?.customerSignature) return null;
   return (
-    task.deadline &&
-    new Date(task.deadline).getTime() < currentTime &&
-    task.status !== "completed"
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 transition-all duration-300 hover:border-slate-700 hover:shadow-lg space-y-4">
+      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <span>✍️</span> Customer Sign-Off Verification
+      </h3>
+      <div className="bg-slate-950/40 border border-slate-850 rounded-xl p-4 text-xs text-slate-400 space-y-3">
+        <div className="flex justify-between border-b border-slate-900 pb-2">
+          <span>Signed By:</span>
+          <span className="font-bold text-white">{task.customerSignName}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-900 pb-2">
+          <span>Phone:</span>
+          <span className="font-mono text-white">{task.customerSignPhone || "N/A"}</span>
+        </div>
+        <div className="flex justify-between border-b border-slate-900 pb-2">
+          <span>Remarks:</span>
+          <span className="italic text-slate-300">"{task.customerSignRemarks || "No comments"}"</span>
+        </div>
+        <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+          <span>Rating:</span>
+          <div className="flex gap-0.5 text-yellow-450 text-sm">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i}>{i < task.customerSignRating ? "★" : "☆"}</span>
+            ))}
+          </div>
+        </div>
+        <div className="pt-2 flex justify-center">
+          <div className="border border-slate-800 rounded-lg p-2 bg-slate-950 flex items-center justify-center max-w-[200px] w-full">
+            <img
+              src={task.customerSignature}
+              alt="Customer Signature"
+              className="max-h-[65px] object-contain invert brightness-200"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
-};
+}
 
-const formatDateTime = (date) => {
-  return new Date(date).toLocaleString("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-};
+function ReviewActionsCard({ task, onReviewSubmitted }) {
+  const [selectedAction, setSelectedAction] = useState(null); // approved, rejected, rework, return
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const reviewStatus = task?.reviewStatus || "pending";
+  const isApproved = reviewStatus === "approved";
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedAction) return;
+
+    if (selectedAction !== "approved" && !reason.trim()) {
+      alert("Please provide a reason or remarks for this action.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await reviewTask(task._id, selectedAction, reason.trim());
+      alert(`Task review submitted: ${selectedAction.toUpperCase()}`);
+      setSelectedAction(null);
+      setReason("");
+      if (onReviewSubmitted) onReviewSubmitted(res.data);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Review action failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isApproved) {
+    return (
+      <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-5 flex items-center gap-4 text-emerald-450">
+        <span className="text-2xl">🔒</span>
+        <div>
+          <p className="text-sm font-bold text-white">Review Locked: Approved</p>
+          <p className="text-xs text-slate-450 mt-0.5">This task has been verified and marked completed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+        Review Decision Panel
+      </h3>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => {
+            setSelectedAction("approved");
+            setReason("");
+          }}
+          className={`flex-1 min-w-[120px] text-xs font-bold uppercase tracking-wider py-2.5 px-3 rounded-xl border transition ${
+            selectedAction === "approved"
+              ? "bg-emerald-600 border-emerald-500 text-white"
+              : "bg-slate-800 border-slate-700/60 text-slate-300 hover:bg-slate-750"
+          }`}
+        >
+          ✅ Approve
+        </button>
+
+        <button
+          onClick={() => setSelectedAction("rework")}
+          className={`flex-1 min-w-[120px] text-xs font-bold uppercase tracking-wider py-2.5 px-3 rounded-xl border transition ${
+            selectedAction === "rework"
+              ? "bg-yellow-600 border-yellow-500 text-white"
+              : "bg-slate-800 border-slate-700/60 text-slate-300 hover:bg-slate-750"
+          }`}
+        >
+          🔄 Request Rework
+        </button>
+
+        <button
+          onClick={() => setSelectedAction("return")}
+          className={`flex-1 min-w-[120px] text-xs font-bold uppercase tracking-wider py-2.5 px-3 rounded-xl border transition ${
+            selectedAction === "return"
+              ? "bg-blue-600 border-blue-500 text-white"
+              : "bg-slate-800 border-slate-700/60 text-slate-300 hover:bg-slate-750"
+          }`}
+        >
+          💬 Return with Comments
+        </button>
+
+        <button
+          onClick={() => setSelectedAction("rejected")}
+          className={`flex-1 min-w-[120px] text-xs font-bold uppercase tracking-wider py-2.5 px-3 rounded-xl border transition ${
+            selectedAction === "rejected"
+              ? "bg-red-650 border-red-550 text-white"
+              : "bg-slate-800 border-slate-700/60 text-slate-300 hover:bg-slate-750"
+          }`}
+        >
+          ❌ Reject
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {selectedAction && (
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleSubmit}
+            className="space-y-3 pt-2 border-t border-slate-800/80 overflow-hidden"
+          >
+            {selectedAction !== "approved" ? (
+              <div>
+                <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1.5">
+                  Remarks / Revision instructions (Required)
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Specify notes, fixes, or remarks for the engineer..."
+                  rows={3}
+                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                  required
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-slate-450">
+                Confirm approval of the submitted work attachments. This will lock the task.
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAction(null);
+                  setReason("");
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-350 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white font-bold"
+              >
+                {loading ? "Submitting..." : "Confirm Action"}
+              </button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function AdminTasks() {
   const [tasks, setTasks] = useState([]);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [selectedTask, setSelectedTask] = useState(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [reviewFilter, setReviewFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (updateSelected = false) => {
     try {
       const res = await getTasks();
-
-      const sortedTasks = [...res.data].sort(
+      const sorted = [...res.data].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
+      setTasks(sorted);
 
-      setTasks(sortedTasks);
+      if (updateSelected && selectedTask) {
+        const fresh = sorted.find((t) => t._id === selectedTask._id);
+        if (fresh) setSelectedTask(fresh);
+      }
     } catch (err) {
       console.error("Fetch tasks error:", err);
     }
   };
 
-  // Updates overdue status automatically every second
-  useEffect(() => {
-    const clockInterval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
-
-    return () => clearInterval(clockInterval);
-  }, []);
-
-  // Fetches backend changes automatically every 30 seconds
   useEffect(() => {
     fetchTasks();
-
-    const interval = setInterval(fetchTasks, 30000);
-
+    const interval = setInterval(() => fetchTasks(true), 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedTask?._id]);
 
   const filteredTasks = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const normSearch = searchTerm.trim().toLowerCase();
+    return tasks.filter((task) => {
+      const title = (task.title || "").toLowerCase();
+      const engineer = (task.assignedTo?.name || "").toLowerCase();
+      const customer = (task.customerName || "").toLowerCase();
 
-    const priorityRank = {
-      high: 1,
-      medium: 2,
-      low: 3,
-    };
+      const matchesSearch =
+        !normSearch ||
+        title.includes(normSearch) ||
+        engineer.includes(normSearch) ||
+        customer.includes(normSearch);
 
-    return [...tasks]
-      .filter((task) => {
-        const taskTitle = (task.title || "").toLowerCase();
-        const clientName = (task.assignedTo?.name || "").toLowerCase();
+      const matchesStatus = statusFilter === "all" || task.status === statusFilter;
+      const matchesReview = reviewFilter === "all" || (task.reviewStatus || "pending") === reviewFilter;
+      const matchesCategory = categoryFilter === "all" || task.taskCategory === categoryFilter;
 
-        const matchesSearch =
-          !normalizedSearch ||
-          taskTitle.includes(normalizedSearch) ||
-          clientName.includes(normalizedSearch);
+      return matchesSearch && matchesStatus && matchesReview && matchesCategory;
+    });
+  }, [tasks, searchTerm, statusFilter, reviewFilter, categoryFilter]);
 
-        const matchesStatus =
-          statusFilter === "all" || task.status === statusFilter;
-
-        const matchesReview =
-          reviewFilter === "all" ||
-          (task.reviewStatus || "pending") === reviewFilter;
-
-        const matchesPriority =
-          priorityFilter === "all" ||
-          (task.priority || "medium") === priorityFilter;
-
-        return (
-          matchesSearch &&
-          matchesStatus &&
-          matchesReview &&
-          matchesPriority
-        );
-      })
-      .sort((a, b) => {
-        if (sortBy === "deadline") {
-          const aDeadline = a.deadline
-            ? new Date(a.deadline).getTime()
-            : Number.MAX_SAFE_INTEGER;
-
-          const bDeadline = b.deadline
-            ? new Date(b.deadline).getTime()
-            : Number.MAX_SAFE_INTEGER;
-
-          return aDeadline - bDeadline;
-        }
-
-        if (sortBy === "priority") {
-          return (
-            priorityRank[a.priority || "medium"] -
-            priorityRank[b.priority || "medium"]
-          );
-        }
-
-        if (sortBy === "oldest") {
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        }
-
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      });
-  }, [
-    tasks,
-    searchTerm,
-    statusFilter,
-    reviewFilter,
-    priorityFilter,
-    sortBy,
-  ]);
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
-    setReviewFilter("all");
-    setPriorityFilter("all");
-    setSortBy("newest");
+  const handleReviewSubmitted = (updatedTask) => {
+    fetchTasks(true);
   };
 
   return (
     <AdminLayout>
-      {/* Page heading */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Workspace Header */}
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white">
-            Task Review Center
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">
+            Review Center
           </h2>
-
-          <p className="mt-1 text-slate-400">
-            Track assignments, priorities, deadlines, submissions, and work time.
+          <p className="text-xs text-slate-400 mt-1">
+            Review completions, inspect site signatures, consume material logs, and assign rework.
           </p>
         </div>
-
-        <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-300">
-          {filteredTasks.length} of {tasks.length} tasks
+        <span className="text-xs font-bold bg-slate-800 border border-slate-700/60 text-slate-300 px-3.5 py-2 rounded-xl">
+          {filteredTasks.length} / {tasks.length} tasks
         </span>
       </div>
 
-      {/* Search, filter and sorting panel */}
-      <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search task or client..."
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-indigo-500"
-          />
-
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
-          >
-            <option value="all">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="in-progress">In progress</option>
-            <option value="completed">Completed</option>
-          </select>
-
-          <select
-            value={reviewFilter}
-            onChange={(event) => setReviewFilter(event.target.value)}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
-          >
-            <option value="all">All reviews</option>
-            <option value="pending">Review pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(event) => setPriorityFilter(event.target.value)}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
-          >
-            <option value="all">All priorities</option>
-            <option value="high">High priority</option>
-            <option value="medium">Medium priority</option>
-            <option value="low">Low priority</option>
-          </select>
-
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-indigo-500"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="deadline">Deadline closest</option>
-            <option value="priority">High priority first</option>
-          </select>
-        </div>
-
-        <button
-          onClick={clearFilters}
-          className="mt-3 text-sm font-semibold text-indigo-400 transition hover:text-indigo-300"
-        >
-          Clear all filters
-        </button>
-      </div>
-
-      {/* Task content */}
-      {tasks.length === 0 ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-          <h3 className="text-lg font-semibold text-white">No tasks yet</h3>
-
-          <p className="mt-2 text-slate-400">
-            Tasks created for clients will appear here.
-          </p>
-        </div>
-      ) : filteredTasks.length === 0 ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-          <h3 className="text-lg font-semibold text-white">
-            No matching tasks
-          </h3>
-
-          <p className="mt-2 text-slate-400">
-            Try changing or clearing your filters.
-          </p>
-
-          <button
-            onClick={clearFilters}
-            className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition hover:bg-indigo-700"
-          >
-            Clear filters
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-5">
-          {filteredTasks.map((task) => (
-            <TaskRow
-              key={task._id}
-              task={task}
-              refreshTasks={fetchTasks}
-              currentTime={currentTime}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Side List (col-span-4) */}
+        <div className="lg:col-span-4 space-y-4">
+          {/* Search & Filters */}
+          <div className="bg-slate-900 border border-slate-850 rounded-2xl p-4 space-y-3">
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search title, engineer or client..."
+              className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
             />
-          ))}
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-
-function TaskRow({ task, refreshTasks, currentTime }) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  useEffect(() => {
-    if (!task.startedAt || task.status !== "in-progress") {
-      return;
-    }
-
-    const updateTimer = () => {
-      const startedTime = new Date(task.startedAt).getTime();
-
-      setElapsedSeconds(
-        Math.max(0, Math.floor((Date.now() - startedTime) / 1000))
-      );
-    };
-
-    updateTimer();
-
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [task.startedAt, task.status]);
-
-  const formatTime = (seconds = 0) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0"
-    )}:${String(secs).padStart(2, "0")}`;
-  };
-
-  const handleApprove = async () => {
-    try {
-      await reviewTask(task._id, "approved");
-      refreshTasks();
-    } catch (error) {
-      console.error(error);
-      alert("Approval failed");
-    }
-  };
-
-  const handleReject = async () => {
-    try {
-      await reviewTask(task._id, "rejected");
-      refreshTasks();
-    } catch (error) {
-      console.error(error);
-      alert("Rejection failed");
-    }
-  };
-
-  const reviewStyle =
-    task.reviewStatus === "approved"
-      ? "bg-green-500/20 text-green-400"
-      : task.reviewStatus === "rejected"
-      ? "bg-red-500/20 text-red-400"
-      : "bg-yellow-500/20 text-yellow-400";
-
-  const statusStyle =
-    task.status === "pending"
-      ? "bg-yellow-500/20 text-yellow-400"
-      : task.status === "in-progress"
-      ? "bg-blue-500/20 text-blue-400"
-      : "bg-green-500/20 text-green-400";
-
-  const overdue = isOverdue(task, currentTime);
-  const priority = task.priority || "medium";
-
-  return (
-    <div
-      className={`rounded-2xl border bg-slate-900 p-5 ${
-        overdue ? "border-red-500/50" : "border-slate-800"
-      }`}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-white">{task.title}</h3>
-
-          <p className="mt-2 text-slate-400">
-            {task.description || "No description provided."}
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${getPriorityStyle(
-                priority
-              )}`}
-            >
-              {priority.toUpperCase()} PRIORITY
-            </span>
-
-            {task.deadline && (
-              <span
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  overdue
-                    ? "border-red-500/30 bg-red-500/20 text-red-400"
-                    : "border-blue-500/30 bg-blue-500/20 text-blue-400"
-                }`}
+            
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-850 rounded-lg p-2 text-slate-350 outline-none"
               >
-                {overdue
-                  ? `⚠ OVERDUE · Due ${formatDateTime(task.deadline)}`
-                  : `Due ${formatDateTime(task.deadline)}`}
-              </span>
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In progress</option>
+                <option value="completed">Completed</option>
+              </select>
+
+              <select
+                value={reviewFilter}
+                onChange={(e) => setReviewFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-850 rounded-lg p-2 text-slate-350 outline-none"
+              >
+                <option value="all">All reviews</option>
+                <option value="pending">Review pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-850 rounded-lg p-2 text-slate-350 outline-none col-span-2"
+              >
+                <option value="all">All categories</option>
+                <option value="office">Office Tasks</option>
+                <option value="field">Field Tasks</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Vertical Task Row Cards */}
+          <div className="space-y-3 max-h-[calc(100vh-21rem)] overflow-y-auto pr-1">
+            {filteredTasks.map((task) => {
+              const isActive = selectedTask?._id === task._id;
+              const isField = task.taskCategory === "field";
+
+              return (
+                <div
+                  key={task._id}
+                  onClick={() => setSelectedTask(task)}
+                  className={`relative cursor-pointer p-4 rounded-xl border transition duration-200 hover:border-indigo-500/50 ${
+                    isActive
+                      ? "bg-slate-800 border-indigo-500/60 shadow-lg"
+                      : "bg-slate-900 border-slate-800 hover:bg-slate-850"
+                  }`}
+                >
+                  {isActive && (
+                    <span className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r bg-indigo-500" />
+                  )}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-[9px] uppercase tracking-wider font-bold">
+                      <span className={isField ? "text-emerald-450" : "text-indigo-400"}>
+                        {isField ? "👷 Field" : "📄 Office"}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded ${
+                        task.reviewStatus === "approved"
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : task.reviewStatus === "rejected"
+                          ? "bg-red-500/10 text-red-405"
+                          : "bg-yellow-500/10 text-yellow-450"
+                      }`}>
+                        {task.reviewStatus || "pending"}
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs font-bold text-white truncate">{task.title}</h4>
+                    
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 pt-1 border-t border-slate-950/20">
+                      <span>Eng: {task.assignedTo?.name || "Unassigned"}</span>
+                      <span>Progress: {task.progress || 0}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredTasks.length === 0 && (
+              <p className="text-xs text-slate-500 italic text-center py-8">
+                No matching tasks found.
+              </p>
             )}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <span className={`rounded-full px-3 py-1 text-sm ${statusStyle}`}>
-            {task.status}
-          </span>
+        {/* Right Side Review Workspace (col-span-8) */}
+        <div className="lg:col-span-8">
+          {selectedTask ? (
+            <div className="space-y-6">
+              {/* Task Header metadata */}
+              <TaskHeader task={selectedTask} />
 
-          <span className={`rounded-full px-3 py-1 text-sm ${reviewStyle}`}>
-            Review: {task.reviewStatus || "pending"}
-          </span>
+              {/* Review Actions Panel */}
+              <ReviewActionsCard
+                task={selectedTask}
+                onReviewSubmitted={handleReviewSubmitted}
+              />
+
+              {/* Core layouts based on Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
+                {/* Left col details cards */}
+                <div className="sm:col-span-7 space-y-6">
+                  {selectedTask.taskCategory === "field" && (
+                    <MaterialsCard task={selectedTask} onRefresh={() => fetchTasks(true)} />
+                  )}
+                  {selectedTask.taskCategory === "field" && (
+                    <PhotoGallery task={selectedTask} onRefresh={() => fetchTasks(true)} />
+                  )}
+                  <NotesCard task={selectedTask} onRefresh={() => fetchTasks(true)} />
+                  <AttachmentsCard task={selectedTask} />
+                  <TaskComments taskId={selectedTask._id} />
+                </div>
+
+                {/* Right col metadata cards */}
+                <div className="sm:col-span-5 space-y-6">
+                  <ProgressCard task={selectedTask} />
+                  {selectedTask.taskCategory === "field" && (
+                    <>
+                      <TravelCard task={selectedTask} onRefresh={() => fetchTasks(true)} />
+                      <SiteCard task={selectedTask} />
+                      <AdminSignatureCard task={selectedTask} />
+                    </>
+                  )}
+                  <CustomerCard task={selectedTask} />
+                  <TimelineCard task={selectedTask} />
+                  <AIAnalysisCard task={selectedTask} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center shadow-lg">
+              <span className="text-5xl block mb-4">🔬</span>
+              <h3 className="text-lg font-bold text-white">Review Panel Offline</h3>
+              <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">
+                Select a completed client task from the left list to review dynamic attachments, check-in histories, and allocate signatures.
+              </p>
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="mt-5 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-        <p className="text-slate-400">
-          Assigned To:
-          <span className="ml-2 font-medium text-white">
-            {task.assignedTo?.name || "Unassigned"}
-          </span>
-        </p>
-
-        <p className="text-slate-400">
-          Created:
-          <span className="ml-2 font-medium text-white">
-            {new Date(task.createdAt).toLocaleDateString("en-IN")}
-          </span>
-        </p>
-
-        {task.deadline && (
-          <p className="text-slate-400">
-            Deadline:
-            <span
-              className={`ml-2 font-medium ${
-                overdue ? "text-red-400" : "text-white"
-              }`}
-            >
-              {formatDateTime(task.deadline)}
-            </span>
-          </p>
-        )}
-
-        {task.startedAt && (
-          <p className="text-slate-400">
-            Started:
-            <span className="ml-2 font-medium text-white">
-              {formatDateTime(task.startedAt)}
-            </span>
-          </p>
-        )}
-
-        {task.submittedAt && (
-          <p className="text-slate-400">
-            Submitted:
-            <span className="ml-2 font-medium text-white">
-              {formatDateTime(task.submittedAt)}
-            </span>
-          </p>
-        )}
-      </div>
-
-      {task.status === "in-progress" && task.startedAt && (
-        <div className="mt-5 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
-          <p className="text-sm text-blue-300">
-            Client is currently working
-          </p>
-
-          <p className="mt-1 text-3xl font-bold tracking-wider text-white">
-            ⏱ {formatTime(elapsedSeconds)}
-          </p>
-
-          <p className="mt-1 text-xs text-slate-400">
-            Timer started when {task.assignedTo?.name || "the client"} clicked
-            Start Task.
-          </p>
-        </div>
-      )}
-
-      {task.status === "completed" && task.totalTimeSpent > 0 && (
-        <div className="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-          <p className="text-sm text-green-300">Final work duration</p>
-
-          <p className="mt-1 text-3xl font-bold tracking-wider text-white">
-            ⏱ {formatTime(task.totalTimeSpent)}
-          </p>
-        </div>
-      )}
-
-      {task.submissionFiles?.length > 0 && (
-        <div className="mt-5">
-          <h4 className="mb-2 font-semibold text-white">
-            Submitted Files
-          </h4>
-
-          <div className="flex flex-col gap-2">
-            {task.submissionFiles.map((file, index) => (
-              <a
-                key={index}
-                href={file}
-                target="_blank"
-                rel="noreferrer"
-                className="w-fit text-blue-400 underline transition hover:text-blue-300"
-              >
-                View File {index + 1}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <TaskComments taskId={task._id} />
-
-      {task.status === "completed" && task.reviewStatus === "pending" && (
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={handleApprove}
-            className="rounded-lg bg-green-600 px-4 py-2 text-white transition hover:bg-green-700"
-          >
-            Approve
-          </button>
-
-          <button
-            onClick={handleReject}
-            className="rounded-lg bg-red-600 px-4 py-2 text-white transition hover:bg-red-700"
-          >
-            Reject
-          </button>
-        </div>
-      )}
-    </div>
+    </AdminLayout>
   );
 }
 

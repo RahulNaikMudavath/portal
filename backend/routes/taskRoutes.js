@@ -20,7 +20,14 @@ const {
   reviewTask,
   updateTaskProgress,
   getStats,
-  getRecentActivities
+  getRecentActivities,
+  addAttachment,
+  updateVisitStatus,
+  addMaterial,
+  addTaskNote,
+  editTaskNote,
+  deleteTaskNote,
+  submitCustomerSignOff
 } = require("../controllers/taskController");
 
 
@@ -57,6 +64,32 @@ router.put(
   upload.array("files"),
   submitTask
 );
+
+// 📎 Client uploads non-submission attachment
+router.put(
+  "/:id/attachment",
+  protect,
+  upload.array("files"),
+  addAttachment
+);
+
+// 🚗 Client updates travel/visit status
+router.put("/:id/visit-status", protect, updateVisitStatus);
+
+// 🧱 Client adds material
+router.put("/:id/materials", protect, addMaterial);
+
+// 📝 Client adds note
+router.post("/:id/notes", protect, addTaskNote);
+
+// 📝 Client edits note
+router.put("/:id/notes/:noteId", protect, editTaskNote);
+
+// 📝 Client deletes note
+router.delete("/:id/notes/:noteId", protect, deleteTaskNote);
+
+// ✍️ Client submits customer sign-off
+router.put("/:id/sign-off", protect, submitCustomerSignOff);
 
 // 👑 Admin reviews task submission
 router.put("/:id/review", protect, isAdmin, reviewTask);

@@ -14,139 +14,127 @@ const initialForm = {
   description: "",
   projectType: "",
   estimatedBudget: "",
+  siteAddress: "",
+  locationCoords: "",
+  siteManager: "",
+  accessHours: "",
   priority: "medium",
+  taskCategory: "office",
   engineer: "",
   deadline: "",
 };
 
 export default function CreateTask() {
+  const navigate = useNavigate();
+  const { draftRequest } = useWorkRequest();
+  const [engineers, setEngineers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState(initialForm);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
-    const navigate = useNavigate();
+  const loadEngineers = async () => {
+    try {
+      const data = await getEngineers();
+      setEngineers(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    const { draftRequest } = useWorkRequest();
-
-    const [engineers, setEngineers] = useState([]);
-
-    const [loading, setLoading] = useState(false);
-
-    const [form, setForm] = useState(initialForm);
-
-    useEffect(() => {
-
+  useEffect(() => {
     loadEngineers();
+  }, []);
 
-}, []);
-
-useEffect(() => {
-
+  useEffect(() => {
     if (!draftRequest) return;
-
     setForm({
-
-        customerName:
-            draftRequest.customerName || "",
-
-        phoneNumber:
-            draftRequest.phoneNumber || "",
-
-        title:
-            draftRequest.subject || "",
-
-        description:
-            draftRequest.description || "",
-
-        projectType:
-            draftRequest.projectType || "",
-
-        estimatedBudget:
-            draftRequest.estimatedBudget || "",
-
-        priority:
-            draftRequest.priority?.toLowerCase() || "medium",
-
-        engineer: "",
-
-        deadline: ""
-
+      customerName: draftRequest.customerName || "",
+      phoneNumber: draftRequest.phoneNumber || "",
+      title: draftRequest.subject || "",
+      description: draftRequest.description || "",
+      projectType: draftRequest.projectType || "",
+      estimatedBudget: draftRequest.estimatedBudget || "",
+      siteAddress: "",
+      locationCoords: "",
+      siteManager: "",
+      accessHours: "",
+      priority: draftRequest.priority?.toLowerCase() || "medium",
+      taskCategory: "office",
+      engineer: "",
+      deadline: ""
     });
+  }, [draftRequest]);
 
-}, [draftRequest]);
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  };
 
-const loadEngineers = async () => {
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     try {
+      setLoading(true);
 
-        const data = await getEngineers();
+      if (!form.engineer) {
+        alert("Please select an engineer");
+        return;
+      }
 
-        setEngineers(data);
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("assignedTo", form.engineer);
+      formData.append("priority", form.priority);
+      formData.append("taskCategory", form.taskCategory);
+      formData.append("customerName", form.customerName);
+      formData.append("phoneNumber", form.phoneNumber);
 
+      if (form.taskCategory === "office") {
+        formData.append("projectType", form.projectType);
+        formData.append("estimatedBudget", form.estimatedBudget);
+      } else {
+        formData.append("siteAddress", form.siteAddress);
+        formData.append("locationCoords", form.locationCoords);
+        formData.append("siteManager", form.siteManager);
+        formData.append("accessHours", form.accessHours);
+      }
+
+      if (form.deadline) {
+        formData.append("deadline", form.deadline);
+      }
+      if (draftRequest?._id) {
+        formData.append("workRequestId", draftRequest._id);
+      }
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        formData.append("files", selectedFiles[i]);
+      }
+
+      await createTask(formData);
+
+      alert("✅ Task Created Successfully!");
+      setForm(initialForm);
+      setSelectedFiles([]);
+      navigate("/admin/tasks");
+    } catch (err) {
+      console.error(err);
+      alert(
+        err.response?.data?.message ||
+        "Failed to create task."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    catch (err) {
-
-        console.error(err);
-
-    }
-
-};
-
-const handleChange = (e) => {
-
-    setForm({
-
-        ...form,
-
-        [e.target.name]: e.target.value
-
-    });
-
-};
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  try {
-    setLoading(true);
-
-    if (!form.engineer) {
-      alert("Please select an engineer");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("title", form.title);
-    formData.append("description", form.description);
-    formData.append("assignedTo", form.engineer);
-    formData.append("priority", form.priority);
-    if (form.deadline) {
-      formData.append("deadline", form.deadline);
-    }
-    if (draftRequest?._id) {
-      formData.append("workRequestId", draftRequest._id);
-    }
-
-    await createTask(formData);
-
-    alert("✅ Task Created Successfully!");
-
-    setForm(initialForm);
-
-    navigate("/admin/tasks");
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert(
-      err.response?.data?.message ||
-      "Failed to create task."
-    );
-
-  } finally {
-
-    setLoading(false);
-
-  }
-};
+  };
 
 return (
   <AdminLayout>
@@ -195,43 +183,94 @@ return (
 
         </div>
 
-        {/* Project */}
-
-        <div className="grid grid-cols-2 gap-6">
-
-          <div>
-
-            <label className="block text-gray-400 mb-2">
-              Project Type
-            </label>
-
-            <input
-              type="text"
-              name="projectType"
-              value={form.projectType}
-              onChange={handleChange}
-              className="w-full bg-slate-800 rounded-lg p-3 text-white"
-            />
-
+        {/* Conditional Category Fields */}
+        {form.taskCategory === "office" ? (
+          <div className="grid grid-cols-2 gap-6 bg-slate-900/40 p-5 rounded-2xl border border-slate-800">
+            <div>
+              <label className="block text-gray-400 mb-2">
+                Project Type
+              </label>
+              <input
+                type="text"
+                name="projectType"
+                value={form.projectType}
+                onChange={handleChange}
+                className="w-full bg-slate-800 rounded-lg p-3 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-400 mb-2">
+                Estimated Budget
+              </label>
+              <input
+                type="text"
+                name="estimatedBudget"
+                value={form.estimatedBudget}
+                onChange={handleChange}
+                className="w-full bg-slate-800 rounded-lg p-3 text-white"
+              />
+            </div>
           </div>
-
-          <div>
-
-            <label className="block text-gray-400 mb-2">
-              Estimated Budget
-            </label>
-
-            <input
-              type="text"
-              name="estimatedBudget"
-              value={form.estimatedBudget}
-              onChange={handleChange}
-              className="w-full bg-slate-800 rounded-lg p-3 text-white"
-            />
-
+        ) : (
+          <div className="space-y-6 bg-slate-900/40 p-5 rounded-2xl border border-slate-800">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-gray-400 mb-2">
+                  Site Manager / Supervisor
+                </label>
+                <input
+                  type="text"
+                  name="siteManager"
+                  value={form.siteManager}
+                  onChange={handleChange}
+                  placeholder="Dave Miller (Site Supervisor)"
+                  className="w-full bg-slate-800 rounded-lg p-3 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-2">
+                  Access Hours
+                </label>
+                <input
+                  type="text"
+                  name="accessHours"
+                  value={form.accessHours}
+                  onChange={handleChange}
+                  placeholder="08:00 AM - 06:00 PM (Mon - Sat)"
+                  className="w-full bg-slate-800 rounded-lg p-3 text-white"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-gray-400 mb-2">
+                  Site Address
+                </label>
+                <input
+                  type="text"
+                  name="siteAddress"
+                  value={form.siteAddress}
+                  onChange={handleChange}
+                  placeholder="102, Industrial Zone, Phase II, Bengaluru, India"
+                  className="w-full bg-slate-800 rounded-lg p-3 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-2">
+                  Location Coordinates / Google Maps link
+                </label>
+                <input
+                  type="text"
+                  name="locationCoords"
+                  value={form.locationCoords}
+                  onChange={handleChange}
+                  placeholder="12.9716 N, 77.5946 E"
+                  className="w-full bg-slate-800 rounded-lg p-3 text-white"
+                />
+              </div>
+            </div>
           </div>
-
-        </div>
+        )}
 
         {/* Subject */}
 
@@ -271,7 +310,7 @@ return (
 
         {/* Priority + Engineer */}
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           <div>
 
@@ -300,6 +339,22 @@ return (
 
             </select>
 
+          </div>
+
+          <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Task Category
+              </label>
+
+              <select
+                  name="taskCategory"
+                  value={form.taskCategory}
+                  onChange={handleChange}
+                  className="w-full bg-slate-800 rounded-lg p-3 text-white"
+              >
+                  <option value="office">📄 Office Task</option>
+                  <option value="field">👷 Field Task</option>
+              </select>
           </div>
 
           <div>
@@ -354,6 +409,24 @@ return (
             className="w-full bg-slate-800 rounded-lg p-3 text-white"
           />
 
+        </div>
+
+        {/* Attachments / Maps / Documents */}
+        <div>
+          <label className="block text-gray-400 mb-2">
+            Project Attachments & Maps
+          </label>
+          <input
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            className="w-full bg-slate-800 border border-slate-700/50 rounded-lg p-3 text-white text-sm"
+          />
+          {selectedFiles.length > 0 && (
+            <div className="mt-2 text-xs text-indigo-400">
+              Selected files: {selectedFiles.map(f => f.name).join(", ")}
+            </div>
+          )}
         </div>
 
         {/* Buttons */}

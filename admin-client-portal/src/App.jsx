@@ -15,13 +15,14 @@ import Activity from "./pages/admin/Activity";
 import WhatsAppInbox from "./pages/admin/WhatsAppInbox";
 
 // Client pages
-import ClientDashboard from "./pages/client/ClientDashboard";
-import MyTasks from "./pages/client/MyTasks";
-import Submissions from "./pages/client/Submissions";
-import Profile from "./pages/client/Profile";
+import ClientDashboard from "./pages/engineer/ClientDashboard";
+import MyTasks from "./pages/engineer/MyTasks";
+import Submissions from "./pages/engineer/Submissions";
+import Profile from "./pages/engineer/Profile";
 import WorkInbox from "./pages/admin/WorkInbox";
 import { Navigate } from "react-router-dom";
 import CreateAIWorkRequest from "./pages/admin/CreateAIWorkRequest";
+import ProjectsWorkspace from "./pages/shared/ProjectsWorkspace";
 
 function App() {
   return (
@@ -48,6 +49,15 @@ function App() {
             element={
               <ProtectedRoute role="admin">
                 <AdminTasks />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/projects"
+            element={
+              <ProtectedRoute role="admin">
+                <ProjectsWorkspace role="admin" />
               </ProtectedRoute>
             }
           />
@@ -114,6 +124,15 @@ function App() {
             element={
               <ProtectedRoute role="client">
                 <MyTasks />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/client/projects"
+            element={
+              <ProtectedRoute role="client">
+                <ProjectsWorkspace role="client" />
               </ProtectedRoute>
             }
           />

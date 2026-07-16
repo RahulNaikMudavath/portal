@@ -90,6 +90,14 @@ const addTaskComment = async (req, res) => {
       message: message.trim(),
     });
 
+    task.activityLog.push({
+      action: "Note Added",
+      icon: "📝",
+      user: loggedInUserId,
+      remarks: message.trim()
+    });
+    await task.save();
+
     const populatedComment = await Comment.findById(comment._id).populate(
       "sender",
       "name email role"

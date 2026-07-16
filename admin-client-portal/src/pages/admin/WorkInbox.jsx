@@ -13,10 +13,6 @@ const [requests, setRequests] = useState([]);
 const [selected, setSelected] = useState(null);
 const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  loadRequests();
-}, []);
-
 const loadRequests = async () => {
   try {
     const data = await getWorkRequests();
@@ -32,6 +28,10 @@ const loadRequests = async () => {
     setLoading(false);
   }
 };
+
+useEffect(() => {
+  loadRequests();
+}, []);
 
 if (loading) {
   return (

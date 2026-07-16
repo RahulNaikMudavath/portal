@@ -13,30 +13,6 @@ function WhatsAppInbox() {
     const [chats, setChats] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
 
-    useEffect(() => {
-
-        loadChats();
-
-        // Listen for new messages
-        socket.on("newMessage", (message) => {
-            console.log("🔥 SOCKET EVENT RECEIVED");
-            console.log(message);
-            loadChats();
-        });
-
-        // Listen for assigned work requests
-        socket.on("workRequestAssigned", (data) => {
-            console.log("🔥 WORK REQUEST ASSIGNED EVENT RECEIVED", data);
-            loadChats();
-        });
-
-        return () => {
-            socket.off("newMessage");
-            socket.off("workRequestAssigned");
-        };
-
-    }, []);
-
     const loadChats = async () => {
 
         try {
@@ -72,6 +48,30 @@ function WhatsAppInbox() {
         }
 
     };
+
+    useEffect(() => {
+
+        loadChats();
+
+        // Listen for new messages
+        socket.on("newMessage", (message) => {
+            console.log("🔥 SOCKET EVENT RECEIVED");
+            console.log(message);
+            loadChats();
+        });
+
+        // Listen for assigned work requests
+        socket.on("workRequestAssigned", (data) => {
+            console.log("🔥 WORK REQUEST ASSIGNED EVENT RECEIVED", data);
+            loadChats();
+        });
+
+        return () => {
+            socket.off("newMessage");
+            socket.off("workRequestAssigned");
+        };
+
+    }, [selectedChat]);
 
     console.log("Selected Chat:", selectedChat);
 

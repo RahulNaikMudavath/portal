@@ -55,6 +55,13 @@ const updateTaskProgress = async (req, res) => {
       updatedBy: loggedInUserId,
     });
 
+    task.activityLog.push({
+      action: `Progress Updated (${progressValue}%)`,
+      icon: "📈",
+      user: req.user.id,
+      remarks: message || ""
+    });
+
     await task.save();
 
     const updatedTask = await Task.findById(taskId)
@@ -99,7 +106,23 @@ const updateTaskProgress = async (req, res) => {
 // 👑 Admin creates task
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, assignedTo, priority, deadline, workRequestId } = req.body;
+    const {
+      title,
+      description,
+      assignedTo,
+      priority,
+      deadline,
+      workRequestId,
+      taskCategory,
+      customerName,
+      phoneNumber,
+      projectType,
+      estimatedBudget,
+      siteAddress,
+      locationCoords,
+      siteManager,
+      accessHours,
+    } = req.body;
     const io = req.app.get("io");
 
     // 🔥 IMPORTANT CHECK
@@ -126,8 +149,30 @@ exports.createTask = async (req, res) => {
       assignedTo,
       priority: priority || "medium",
       deadline: deadline || null,
+      taskCategory: req.body.taskCategory,
+      workMode: req.body.taskCategory,
+      visitStatus:
+        req.body.taskCategory === "field"
+          ? "travelling"
+          : "not-required",
       createdBy: req.user.id,
       files: fileUrls,
+      customerName,
+      phoneNumber,
+      projectType,
+      estimatedBudget,
+      siteAddress,
+      locationCoords,
+      siteManager,
+      accessHours,
+      activityLog: [
+        {
+          action: "Task Assigned",
+          icon: "📋",
+          user: req.user.id,
+          remarks: "Task assigned to engineer"
+        }
+      ]
     });
 
     if (request) {
@@ -251,6 +296,12 @@ if (task.startedAt) {
   task.totalTimeSpent = Math.floor(millisecondsSpent / 1000);
 }
 
+    task.activityLog.push({
+      action: "Submitted",
+      icon: "📤",
+      user: req.user.id
+    });
+
     await task.save();
 
     await Activity.create({
@@ -303,6 +354,12 @@ exports.startTask = async (req, res) => {
 
     task.status = "in-progress";
     task.startedAt = new Date();
+
+    task.activityLog.push({
+      action: "Started",
+      icon: "🚀",
+      user: req.user.id
+    });
 
     await task.save();
     await Activity.create({
@@ -363,14 +420,53 @@ exports.reviewTask = async (req, res) => {
       return res.status(403).json({ message: "Admin only" });
     }
 
-    task.reviewStatus = status;
+    if (task.reviewStatus === "approved") {
+      return res.status(400).json({ message: "Approved tasks are locked and cannot be changed" });
+    }
+
+    const { reason } = req.body;
+    if (status !== "approved" && (!reason || !reason.trim())) {
+      return res.status(400).json({ message: "Reason is required for rejection/rework/return actions" });
+    }
+
+    task.reviewStatus = status === "approved" ? "approved" : "rejected";
+
+    let actionLabel = "Task Approved";
+    let actionIcon = "✅";
+    if (status === "rejected") {
+      actionLabel = "Task Rejected";
+      actionIcon = "❌";
+    } else if (status === "rework") {
+      actionLabel = "Rework Requested";
+      actionIcon = "🔄";
+    } else if (status === "return") {
+      actionLabel = "Returned with Comments";
+      actionIcon = "💬";
+    }
+
+    task.activityLog.push({
+      action: actionLabel,
+      icon: actionIcon,
+      user: req.user.id,
+      remarks: reason || "Approved by administrator"
+    });
 
     await task.save();
+
+    if (reason && reason.trim()) {
+      const Comment = require("../models/Comment");
+      await Comment.create({
+        taskId: task._id,
+        sender: req.user.id,
+        message: `[Admin Review Note] ${reason.trim()}`
+      });
+    }
+
     await Activity.create({
-  user: req.user.id,
-  action: status === "approved" ? "Approved task" : "Rejected task",
-  taskId: task._id
-});
+      user: req.user.id,
+      action: status === "approved" ? "Approved task" : "Returned/Rejected task",
+      taskId: task._id
+    });
 
     // 📢 Create notification for client
     const notificationType = status === "approved" ? "task_approved" : "task_rejected";
@@ -464,5 +560,199 @@ exports.getRecentActivities = async (req, res) => {
   }
 };
 
+const addAttachment = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (task.assignedTo.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const fileUrls = req.files?.map(file => file.path) || [];
+    task.files.push(...fileUrls);
+
+    task.activityLog.push({
+      action: "Attachment Uploaded",
+      icon: "📎",
+      user: req.user.id,
+      remarks: `Uploaded ${fileUrls.length} file(s)`
+    });
+
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const updateVisitStatus = async (req, res) => {
+  try {
+    const { visitStatus } = req.body;
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (task.assignedTo.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    task.visitStatus = visitStatus;
+
+    task.activityLog.push({
+      action: `Status: ${visitStatus.toUpperCase().replace("-", " ")}`,
+      icon: "🚗",
+      user: req.user.id,
+      remarks: `Visit status changed to ${visitStatus}`
+    });
+
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const addMaterial = async (req, res) => {
+  try {
+    const { name, qty, unit, remarks } = req.body;
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    task.materials.push({ name, qty, unit, remarks });
+
+    task.activityLog.push({
+      action: "Material Added",
+      icon: "🧱",
+      user: req.user.id,
+      remarks: `${qty} ${unit} of ${name} added`
+    });
+
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const addTaskNote = async (req, res) => {
+  try {
+    const { text } = req.body;
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    task.notes.push({
+      text,
+      user: req.user.id,
+      userName: req.user.name || req.user.email
+    });
+
+    task.activityLog.push({
+      action: "Note Added",
+      icon: "📝",
+      user: req.user.id,
+      remarks: text
+    });
+
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const editTaskNote = async (req, res) => {
+  try {
+    const { text } = req.body;
+    const { id, noteId } = req.params;
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    const note = task.notes.id(noteId);
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    if (note.user.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to edit this note" });
+    }
+
+    note.text = text;
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteTaskNote = async (req, res) => {
+  try {
+    const { id, noteId } = req.params;
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    const note = task.notes.id(noteId);
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    if (note.user.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to delete this note" });
+    }
+
+    task.notes.pull(noteId);
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const submitCustomerSignOff = async (req, res) => {
+  try {
+    const { name, phone, remarks, rating, signature } = req.body;
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    task.customerSignName = name;
+    task.customerSignPhone = phone;
+    task.customerSignRemarks = remarks;
+    task.customerSignRating = rating;
+    task.customerSignature = signature;
+
+    task.activityLog.push({
+      action: "Customer Sign-off Submitted",
+      icon: "✍️",
+      user: req.user.id,
+      remarks: `Signed by ${name} (Rating: ${rating}/5)`
+    });
+
+    await task.save();
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateVisitStatus = updateVisitStatus;
+exports.addAttachment = addAttachment;
 exports.updateTaskProgress = updateTaskProgress;
+exports.addMaterial = addMaterial;
+exports.addTaskNote = addTaskNote;
+exports.editTaskNote = editTaskNote;
+exports.deleteTaskNote = deleteTaskNote;
+exports.submitCustomerSignOff = submitCustomerSignOff;
 

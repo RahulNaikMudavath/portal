@@ -5,6 +5,7 @@ function ClientSidebar({ open, setOpen }) {
 
   const links = [
     { name: "Dashboard", path: "/client/dashboard" },
+    { name: "Projects", path: "/client/projects" },
     { name: "My Tasks", path: "/client/tasks" },
     { name: "Submissions", path: "/client/submissions" },
     { name: "Profile", path: "/client/profile" }

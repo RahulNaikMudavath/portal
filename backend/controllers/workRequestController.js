@@ -21,6 +21,7 @@ const convertToWorkOrder = async (req, res) => {
       deadline,
       budget,
       notes,
+      taskCategory,
     } = req.body;
 
     const taskPriority = priority === "urgent" ? "high" : priority;
@@ -34,6 +35,7 @@ const convertToWorkOrder = async (req, res) => {
       assignedTo: assignedEngineer,
       priority: taskPriority,
       deadline,
+      taskCategory: taskCategory || "office",
       createdBy: req.user.id,
     });
 
@@ -190,6 +192,7 @@ const createWorkRequest = async (req, res) => {
         assignedTo: req.body.assignedEngineer,
         priority: taskPriority,
         deadline: req.body.preferredVisitDate || null,
+        taskCategory: req.body.taskCategory || "office",
         createdBy: req.user.id,
       });
 
