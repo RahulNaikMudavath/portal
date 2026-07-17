@@ -54,8 +54,8 @@ export const uploadTaskAttachment = (id, formData) =>
   });
 
 // update visit/travel status (client)
-export const updateVisitStatus = (id, visitStatus) =>
-  API.put(`/api/tasks/${id}/visit-status`, { visitStatus });
+export const updateVisitStatus = (id, visitStatus, locationCoords) =>
+  API.put(`/api/tasks/${id}/visit-status`, { visitStatus, locationCoords });
 
 // add material (client)
 export const addMaterial = (id, material) =>

@@ -15,6 +15,7 @@ import TimelineCard from "../../components/engineer/TimelineCard";
 import SiteCard from "../../components/engineer/SiteCard";
 import TravelCard from "../../components/engineer/TravelCard";
 import TaskComments from "../../components/comments/TaskComments";
+import socket from "../../socket";
 
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -244,8 +245,16 @@ function AdminTasks() {
 
   useEffect(() => {
     fetchTasks();
+
+    socket.on("taskDashboardUpdate", () => {
+      fetchTasks(true);
+    });
+
     const interval = setInterval(() => fetchTasks(true), 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      socket.off("taskDashboardUpdate");
+    };
   }, [selectedTask?._id]);
 
   const filteredTasks = useMemo(() => {

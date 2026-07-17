@@ -11,6 +11,8 @@ import AttachmentsCard from "./AttachmentsCard";
 import TravelCard from "./TravelCard";
 import TaskActionBar from "./TaskActionBar";
 import TaskHeader from "./TaskHeader";
+import VoiceNotesCard from "./VoiceNotesCard";
+import QrCodeScannerCard from "./QrCodeScannerCard";
 import { submitCustomerSignOff } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -153,7 +155,7 @@ function CustomerSignatureCard({ task, onRefresh }) {
                 placeholder="e.g. John Doe"
                 value={signerName}
                 onChange={(e) => setSignerName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+                className="w-full bg-slate-955 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"
               />
             </div>
             <div>
@@ -165,7 +167,7 @@ function CustomerSignatureCard({ task, onRefresh }) {
                 placeholder="e.g. +91 99999 99999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+                className="w-full bg-slate-955 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"
               />
             </div>
           </div>
@@ -199,7 +201,7 @@ function CustomerSignatureCard({ task, onRefresh }) {
               placeholder="e.g. Very professional service, completed on schedule."
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+              className="w-full bg-slate-955 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"
             />
           </div>
 
@@ -207,7 +209,7 @@ function CustomerSignatureCard({ task, onRefresh }) {
             <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">
               Signature Board
             </label>
-            <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+            <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-955">
               <canvas
                 ref={canvasRef}
                 width={380}
@@ -219,7 +221,7 @@ function CustomerSignatureCard({ task, onRefresh }) {
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="w-full h-[120px] cursor-crosshair bg-slate-950"
+                className="w-full h-[120px] cursor-crosshair bg-slate-955"
               />
             </div>
           </div>
@@ -288,6 +290,7 @@ export default function FieldWorkspace({
         {/* Left Column */}
         <div className="lg:col-span-7 space-y-6">
           <NotesCard task={task} onRefresh={onRefresh} />
+          <VoiceNotesCard task={task} onRefresh={onRefresh} />
           <MaterialsCard task={task} onRefresh={onRefresh} />
           <PhotoGallery task={task} onRefresh={onRefresh} />
           <AttachmentsCard task={task} />
@@ -300,6 +303,7 @@ export default function FieldWorkspace({
             onUpdate={onProgressUpdate}
           />
           <TravelCard task={task} onRefresh={onRefresh} />
+          <QrCodeScannerCard task={task} onRefresh={onRefresh} />
           <WeatherCard />
           <CustomerCard task={task} />
           <SiteCard task={task} />

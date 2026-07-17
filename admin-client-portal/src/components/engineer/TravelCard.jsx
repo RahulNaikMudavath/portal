@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { updateVisitStatus } from "../../services/taskService";
 import { motion } from "framer-motion";
+import { isAppOnline, queueOfflineAction } from "../../utils/offlineSync";
 
 export default function TravelCard({ task, onRefresh }) {
   const [updating, setUpdating] = useState(false);
@@ -40,11 +41,34 @@ export default function TravelCard({ task, onRefresh }) {
   const handleStatusChange = async (nextStatus) => {
     try {
       setUpdating(true);
-      await updateVisitStatus(task._id, nextStatus);
-      if (onRefresh) onRefresh();
+      
+      let locationCoords = null;
+      if (nextStatus === "reached-site" || nextStatus === "working" || nextStatus === "inspection") {
+        try {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+              enableHighAccuracy: true,
+              timeout: 6000 
+            });
+          });
+          locationCoords = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+          console.log("GPS Location captured:", locationCoords);
+        } catch (gpsError) {
+          console.warn("GPS tracking failed or denied:", gpsError);
+        }
+      }
+
+      if (!isAppOnline()) {
+        queueOfflineAction("updateVisitStatus", task._id, { visitStatus: nextStatus, locationCoords });
+        alert("Field Mode Offline: Action queued locally!");
+        if (onRefresh) onRefresh();
+      } else {
+        await updateVisitStatus(task._id, nextStatus, locationCoords);
+        if (onRefresh) onRefresh();
+      }
     } catch (err) {
       console.error(err);
-      alert("Failed to update travel status");
+      alert("Failed to update status");
     } finally {
       setUpdating(false);
     }
@@ -52,9 +76,23 @@ export default function TravelCard({ task, onRefresh }) {
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 transition-all duration-300 hover:border-slate-700 hover:shadow-lg space-y-6">
-      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-        <span>🚗</span> Dispatch & Site Check-in
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <span>🚗</span> Dispatch & Site Check-in
+        </h3>
+        {task?.locationCoords && (
+          <span className="text-[10px] bg-indigo-500/15 border border-indigo-500/25 px-2 py-0.5 rounded-full text-indigo-400 font-mono">
+            📍 GPS CAPTURED
+          </span>
+        )}
+      </div>
+
+      {task?.locationCoords && (
+        <div className="bg-slate-950 border border-slate-850 rounded-xl p-3 text-xs flex items-center justify-between text-slate-350">
+          <span>On-Site GPS Target:</span>
+          <span className="font-mono text-indigo-400 font-bold">{task.locationCoords}</span>
+        </div>
+      )}
 
       {/* Visual Stepper */}
       <div className="relative pt-2 pb-1.5">

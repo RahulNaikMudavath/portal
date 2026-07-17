@@ -3,9 +3,11 @@ import AdminLayout from "../../layouts/AdminLayout";
 import { getTasks } from "../../services/taskService";
 import API from "../../services/api";
 import ReviewModal from "../../components/ReviewModal";
-import AnalyticsOverview from "../../components/analytics/AnalyticsOverview";
+import SmartAiDashboard from "../../components/dashboard/SmartAiDashboard";
+import AiAnalyticsView from "../../components/analytics/AiAnalyticsView";
 import AttentionCenter from "../../components/dashboard/AttentionCenter";
 import { getClients } from "../../services/userService";
+import socket from "../../socket";
 
 function AdminDashboard() {
   const [tasks, setTasks] = useState([]);
@@ -15,6 +17,7 @@ function AdminDashboard() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const fetchDashboardData = async () => {
     try {
@@ -35,9 +38,16 @@ function AdminDashboard() {
   useEffect(() => {
     fetchDashboardData();
 
+    socket.on("taskDashboardUpdate", () => {
+      fetchDashboardData();
+    });
+
     const interval = setInterval(fetchDashboardData, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      socket.off("taskDashboardUpdate");
+    };
   }, []);
 
   const handleSearch = async () => {
@@ -129,174 +139,214 @@ function AdminDashboard() {
   return (
     <>
       <AdminLayout>
-        <div className="space-y-10">
-          {/* Main Analytics */}
-          <AnalyticsOverview />
-          <AttentionCenter tasks={tasks} onOpenTask={handleViewTask} />
-
-          {/* Dashboard heading */}
-          <div>
-            <h2 className="text-3xl font-bold text-light-text dark:text-dark-text">
-              Workspace Management
-            </h2>
-
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
-              Manage clients, track work, and review submissions.
-            </p>
+        <div className="space-y-8">
+          {/* Header & Tab Selector */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-light-border dark:border-dark-border pb-4">
+            <div>
+              <h2 className="text-3xl font-extrabold tracking-tight text-light-text dark:text-dark-text">
+                Control Center Dashboard
+              </h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Track live work logs, monitor workloads, and evaluate AI predictions.
+              </p>
+            </div>
+            <div className="flex rounded-xl bg-gray-105 dark:bg-slate-800 p-1 self-start sm:self-auto shadow-xs border border-light-border dark:border-dark-border">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${
+                  activeTab === "overview"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-650 dark:text-gray-400 hover:text-light-text dark:hover:text-white"
+                }`}
+              >
+                Workspace Overview
+              </button>
+              <button
+                onClick={() => setActiveTab("ai")}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                  activeTab === "ai"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-650 dark:text-gray-400 hover:text-light-text dark:hover:text-white"
+                }`}
+              >
+                ✨ AI Predictor Suite
+              </button>
+            </div>
           </div>
 
-          {/* Collapsible Recent Activity */}
-          <section className="rounded-2xl border border-light-border bg-light-card shadow-sm dark:border-dark-border dark:bg-dark-card">
-            <button
-              onClick={() => setShowActivity((current) => !current)}
-              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-            >
+          {activeTab === "overview" ? (
+            <div className="space-y-10">
+              {/* Main Analytics */}
+              <SmartAiDashboard tasks={tasks} onApproveTask={handleViewTask} />
+              <AttentionCenter tasks={tasks} onOpenTask={handleViewTask} />
+
+              {/* Dashboard heading */}
               <div>
-                <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
-                  Recent Activity
-                </h3>
+                <h2 className="text-2xl font-bold text-light-text dark:text-dark-text">
+                  Workspace Management
+                </h2>
 
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Latest updates across tasks, submissions, and reviews.
+                  Manage clients, track work, and review submissions.
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-3">
-                <span className="hidden text-xs text-gray-500 dark:text-gray-400 sm:block">
-                  Auto refreshes every 30 sec
-                </span>
+              {/* Collapsible Recent Activity */}
+              <section className="rounded-2xl border border-light-border bg-light-card shadow-sm dark:border-dark-border dark:bg-dark-card">
+                <button
+                  onClick={() => setShowActivity((current) => !current)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                >
+                  <div>
+                    <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+                      Recent Activity
+                    </h3>
 
-                <span className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white">
-                  {showActivity ? "Hide ▲" : "Show ▼"}
-                </span>
-              </div>
-            </button>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Latest updates across tasks, submissions, and reviews.
+                    </p>
+                  </div>
 
-            {showActivity && (
-              <div className="border-t border-light-border px-5 pb-5 pt-4 dark:border-dark-border">
-                {recentActivities.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    No recent activity yet.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {recentActivities.map((activity) => (
-                      <div
-                        key={activity.id}
-                        className="flex items-start gap-4 rounded-xl border border-light-border bg-light-bg p-4 dark:border-dark-border dark:bg-dark-bg"
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-lg">
-                          {activity.icon}
-                        </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="hidden text-xs text-gray-500 dark:text-gray-400 sm:block">
+                      Auto refreshes every 30 sec
+                    </span>
 
-                        <div className="min-w-0">
-                          <p className="font-semibold text-light-text dark:text-dark-text">
-                            {activity.title}
-                          </p>
+                    <span className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white">
+                      {showActivity ? "Hide ▲" : "Show ▼"}
+                    </span>
+                  </div>
+                </button>
 
-                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Client: {activity.clientName}
-                          </p>
+                {showActivity && (
+                  <div className="border-t border-light-border px-5 pb-5 pt-4 dark:border-dark-border">
+                    {recentActivities.length === 0 ? (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        No recent activity yet.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentActivities.map((activity) => (
+                          <div
+                            key={activity.id}
+                            className="flex items-start gap-4 rounded-xl border border-light-border bg-light-bg p-4 dark:border-dark-border dark:bg-dark-bg"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-lg">
+                              {activity.icon}
+                            </div>
 
-                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(activity.date).toLocaleString("en-IN")}
-                          </p>
-                        </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-light-text dark:text-dark-text">
+                                {activity.title}
+                              </p>
+
+                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Client: {activity.clientName}
+                              </p>
+
+                              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(activity.date).toLocaleString("en-IN")}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Client Directory */}
+              <section>
+                <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+                      Client Directory
+                    </h3>
+
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Search clients by name or unique client ID.
+                    </p>
+                  </div>
+
+                  <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+                    <input
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Search name or client ID"
+                      className="w-full rounded-xl border border-light-border bg-light-card px-4 py-3 text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80"
+                    />
+
+                    <button
+                      onClick={handleSearch}
+                      className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+                    >
+                      Search
+                    </button>
+                  </div>
+                </div>
+
+                {clientsLoading ? (
+                  <EmptyBox text="Loading clients..." />
+                ) : clients.length === 0 ? (
+                  <EmptyBox text="No clients found." />
+                ) : (
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {clients.slice(0, 8).map((client) => (
+                      <ClientCard key={client._id} client={client} />
                     ))}
                   </div>
                 )}
-              </div>
-            )}
-          </section>
+              </section>
 
-          {/* Client Directory */}
-          <section>
-            <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
-                  Client Directory
-                </h3>
-
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Search clients by name or unique client ID.
-                </p>
-              </div>
-
-              <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
-                <input
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder="Search name or client ID"
-                  className="w-full rounded-xl border border-light-border bg-light-card px-4 py-3 text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80"
+              {/* Active Tasks */}
+              <section>
+                <SectionHeader
+                  title="Active Tasks"
+                  subtitle="Tasks that are pending or currently in progress."
                 />
 
-                <button
-                  onClick={handleSearch}
-                  className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
-                >
-                  Search
-                </button>
-              </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {activeTasks.length === 0 ? (
+                    <EmptyBox text="No active tasks." />
+                  ) : (
+                    activeTasks.slice(0, 6).map((task) => (
+                      <TaskCard
+                        key={task._id}
+                        task={task}
+                        onView={handleViewTask}
+                      />
+                    ))
+                  )}
+                </div>
+              </section>
+
+              {/* Completed Tasks */}
+              <section>
+                <SectionHeader
+                  title="Task History"
+                  subtitle="Completed tasks and reviewed submissions."
+                />
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {completedTasks.length === 0 ? (
+                    <EmptyBox text="No completed tasks yet." />
+                  ) : (
+                    completedTasks.slice(0, 6).map((task) => (
+                      <TaskCard
+                        key={task._id}
+                        task={task}
+                        onView={handleViewTask}
+                      />
+                    ))
+                  )}
+                </div>
+              </section>
             </div>
-
-            {clientsLoading ? (
-              <EmptyBox text="Loading clients..." />
-            ) : clients.length === 0 ? (
-              <EmptyBox text="No clients found." />
-            ) : (
-              <div className="grid gap-4 lg:grid-cols-2">
-                {clients.slice(0, 8).map((client) => (
-                  <ClientCard key={client._id} client={client} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Active Tasks */}
-          <section>
-            <SectionHeader
-              title="Active Tasks"
-              subtitle="Tasks that are pending or currently in progress."
-            />
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              {activeTasks.length === 0 ? (
-                <EmptyBox text="No active tasks." />
-              ) : (
-                activeTasks.slice(0, 6).map((task) => (
-                  <TaskCard
-                    key={task._id}
-                    task={task}
-                    onView={handleViewTask}
-                  />
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* Completed Tasks */}
-          <section>
-            <SectionHeader
-              title="Task History"
-              subtitle="Completed tasks and reviewed submissions."
-            />
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              {completedTasks.length === 0 ? (
-                <EmptyBox text="No completed tasks yet." />
-              ) : (
-                completedTasks.slice(0, 6).map((task) => (
-                  <TaskCard
-                    key={task._id}
-                    task={task}
-                    onView={handleViewTask}
-                  />
-                ))
-              )}
-            </div>
-          </section>
+          ) : (
+            <AiAnalyticsView />
+          )}
         </div>
       </AdminLayout>
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import AIAssistantSidebar from "../components/dashboard/AIAssistantSidebar";
 
 function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
@@ -18,6 +19,9 @@ function AdminLayout({ children }) {
           {children}
         </main>
       </div>
+
+      {/* Global AI Assistant Floating Sidebar */}
+      <AIAssistantSidebar />
     </div>
   );
 }

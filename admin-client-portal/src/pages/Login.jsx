@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "../services/authService";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGoogleLogin } from "@react-oauth/google";
+import { Plus, X } from "lucide-react";
+import API from "../services/api";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 function Login() {
   const navigate = useNavigate();
@@ -9,115 +15,432 @@ function Login() {
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("client"); // admin, client
+
+  // Sandbox Google State
+  const [showSandboxGoogle, setShowSandboxGoogle] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState("");
+  const [googleStatus, setGoogleStatus] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
+  const mockGoogleAccounts = [
+    { name: "Rahul Naik", email: "rahul.naik@gmail.com", avatar: "RN" },
+    { name: "Admin Consultancy", email: "admin@constructai.com", avatar: "AC" },
+    { name: "Engineer Maaran", email: "engineer.maaran@gmail.com", avatar: "EM" }
+  ];
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = async () => {
+  // Google Login successful handler
+  const handleGoogleLoginSuccess = async (token) => {
     try {
-      const res = await login(form);
-
-      // save token + user
+      setLoading(true);
+      const res = await API.post("/api/auth/google", { token });
+      
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      alert("Login successful");
+      if (!res.data.user.isOnboarded) {
+        navigate("/complete-profile");
+      } else {
+        if (res.data.user.role === "admin") {
+          navigate("/admin/work-inbox");
+        } else {
+          navigate("/client/dashboard");
+        }
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      alert(error.response?.data?.message || "Google Authentication failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // 🔥 ROLE BASED REDIRECT
+  // Official Google OAuth hook
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      handleGoogleLoginSuccess(tokenResponse.access_token);
+    },
+    onError: (err) => {
+      console.error("Google Auth failed:", err);
+      // Failover to sandbox
+      setShowSandboxGoogle(true);
+    }
+  });
+
+  const handleGoogleClick = () => {
+    loginWithGoogle();
+  };
+
+  const selectSandboxAccount = (account) => {
+    setGoogleStatus(`Signing in as ${account.name}...`);
+    setTimeout(() => {
+      setGoogleStatus("");
+      setShowSandboxGoogle(false);
+      handleGoogleLoginSuccess(`mock-${account.email}`);
+    }, 1000);
+  };
+
+  const handleCustomSandboxAutofill = (e) => {
+    e.preventDefault();
+    if (!googleEmail || !googleEmail.includes("@")) {
+      setGoogleStatus("Please enter a valid Google email address.");
+      return;
+    }
+    setGoogleStatus("Connecting Google API...");
+    setTimeout(() => {
+      setGoogleStatus("");
+      setShowSandboxGoogle(false);
+      setShowCustomInput(false);
+      handleGoogleLoginSuccess(`mock-${googleEmail}`);
+    }, 1000);
+  };
+
+  // Helper to prefill accounts for demo testing
+  const handlePrefill = (role) => {
+    if (role === "admin") {
+      setForm({
+        email: "admin@constructai.com",
+        password: "password123",
+      });
+      setSelectedRole("admin");
+    } else {
+      setForm({
+        email: "engineer@constructai.com",
+        password: "password123",
+      });
+      setSelectedRole("client");
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!form.email || !form.password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await login(form);
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      // Role redirect
       if (res.data.user.role === "admin") {
-        navigate("/admin/dashboard");
+        navigate("/admin/work-inbox");
       } else {
         navigate("/client/dashboard");
       }
-
     } catch (error) {
-      alert(error.response?.data?.message || "Login failed");
+      alert(error.response?.data?.message || "Login failed. Check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse animation-delay-4000"></div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 md:p-6 relative overflow-hidden select-none">
+      
+      {/* Animated Blueprint Background Grid */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl animate-pulse" />
       </div>
 
-      {/* Main login card */}
-      <div className="relative z-10 w-full max-w-md">
-        <div className="backdrop-blur-lg bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8 transform hover:scale-105 transition-all duration-300">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
-              <span className="text-3xl text-white">🚀</span>
+      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
+        
+        {/* Left Column: Brand Guidelines (col-span-4) */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="md:col-span-4 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 flex flex-col justify-between space-y-6 backdrop-blur-xl"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-xl">🏗️</span>
+              </div>
+              <div>
+                <h2 className="text-md font-black tracking-wider text-white">MAARAN</h2>
+                <p className="text-[8px] uppercase font-bold text-amber-450 tracking-widest">
+                  Engineers & Consultancy
+                </p>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-            <p className="text-gray-300">Sign in to your account</p>
+
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-white">ConstructAI ERP</h3>
+              <p className="text-xs text-slate-400">
+                Design review pipelines, WhatsApp dispatch, GPS checklists, and field inspections.
+              </p>
+            </div>
           </div>
 
-          {/* Form */}
-          <div className="space-y-6">
-            {/* Email input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-400 text-lg">📧</span>
-              </div>
-              <input
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-              />
-            </div>
-
-            {/* Password input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-400 text-lg">🔒</span>
-              </div>
-              <input
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-              />
-            </div>
-
-            {/* Login button */}
-            <button
-              onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-transparent"
-            >
-              <span className="flex items-center justify-center">
-                <span className="mr-2">🚀</span>
-                Launch Login
-              </span>
-            </button>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-gray-300">
-              New to the portal?{" "}
-              <Link
-                to="/signup"
-                className="inline-flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-purple-300 hover:text-purple-200 font-semibold rounded-lg border border-white/20 hover:border-white/30 transition-all duration-200 backdrop-blur-sm"
+          {/* Quick Prefill Account Helper */}
+          <div className="space-y-3 bg-slate-950/40 border border-slate-850 p-4 rounded-2xl">
+            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-wider">Demo Accounts</span>
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+              <button
+                type="button"
+                onClick={() => handlePrefill("admin")}
+                className={`py-2 px-3 rounded-lg border transition text-center ${
+                  selectedRole === "admin"
+                    ? "bg-indigo-600 border-indigo-500 text-white"
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                }`}
               >
-                <span className="mr-2">🌱</span>
-                Create Account
-              </Link>
+                👑 Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrefill("client")}
+                className={`py-2 px-3 rounded-lg border transition text-center ${
+                  selectedRole === "client"
+                    ? "bg-indigo-600 border-indigo-500 text-white"
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                👷 Engineer
+              </button>
+            </div>
+            <p className="text-[9px] text-slate-500 text-center leading-normal">
+              Click to autofill mock local login accounts.
             </p>
           </div>
 
-          {/* Decorative elements */}
-          <div className="absolute -top-2 -right-2 w-4 h-4 bg-purple-400 rounded-full animate-ping"></div>
-          <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-blue-400 rounded-full animate-ping animation-delay-1000"></div>
-        </div>
+          <div className="text-[10px] text-slate-500 border-t border-slate-850 pt-4">
+            <p>Support: maaranengineers2016@gmail.com</p>
+          </div>
+        </motion.div>
+
+        {/* Right Column: Clean Form (col-span-8) */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="md:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-center relative overflow-hidden"
+        >
+          <div className="mb-6 space-y-0.5">
+            <h3 className="text-lg font-bold text-white">Sign In</h3>
+            <p className="text-xs text-slate-405">Access the construction management console.</p>
+          </div>
+
+          <div className="space-y-4 text-xs text-slate-400">
+            
+            {/* Manual Form */}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <button
+                onClick={handleGoogleClick}
+                type="button"
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-slate-955 border border-slate-800 hover:bg-slate-900 transition font-bold text-xs uppercase text-white shadow-xs cursor-pointer"
+              >
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 15 0 12 0 7.35 0 3.37 2.67 1.43 6.56l3.86 3C6.23 6.94 8.89 5.04 12 5.04z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.19 3.54-8.71z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.29 14.44c-.25-.74-.39-1.54-.39-2.37s.14-1.63.39-2.37l-3.86-3C.56 8.56 0 10.22 0 12s.56 3.44 1.43 5.31l3.86-3z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.72-2.47 1.16-4.05 1.16-3.11 0-5.77-1.9-6.71-4.52l-3.86 3C3.37 21.33 7.35 24 12 24z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+
+              <div className="flex items-center gap-2 py-1">
+                <div className="h-px bg-slate-800 flex-1"></div>
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">or</span>
+                <div className="h-px bg-slate-800 flex-1"></div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="e.g. name@company.com"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1.5">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange}
+                  className="w-full bg-slate-955 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs uppercase tracking-wider py-4 px-4 rounded-xl transition duration-200 active:scale-95 shadow-md shadow-indigo-600/10 cursor-pointer"
+              >
+                {loading ? "Authenticating..." : "🚪 Connect Portal"}
+              </button>
+            </form>
+
+            <div className="pt-2 text-center text-xs">
+              <p className="text-slate-450">
+                New on the platform?{" "}
+                <Link to="/signup" className="text-indigo-400 font-bold hover:underline">
+                  Create Account
+                </Link>
+              </p>
+            </div>
+          </div>
+        </motion.div>
       </div>
+
+      {/* Sandbox Google account selector modal */}
+      <AnimatePresence>
+        {showSandboxGoogle && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 flex items-center justify-center p-6 z-50 backdrop-blur-xs"
+          >
+            <div className="w-full max-w-sm bg-white text-slate-800 p-6 rounded-3xl space-y-4 shadow-2xl relative">
+              
+              <button 
+                onClick={() => setShowSandboxGoogle(false)}
+                className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 text-slate-500 cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+
+              <div className="text-center space-y-2 pb-2 border-b border-gray-100">
+                <svg className="h-6 w-6 mx-auto" viewBox="0 0 24 24">
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 15 0 12 0 7.35 0 3.37 2.67 1.43 6.56l3.86 3C6.23 6.94 8.89 5.04 12 5.04z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.19 3.54-8.71z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.29 14.44c-.25-.74-.39-1.54-.39-2.37s.14-1.63.39-2.37l-3.86-3C.56 8.56 0 10.22 0 12s.56 3.44 1.43 5.31l3.86-3z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.72-2.47 1.16-4.05 1.16-3.11 0-5.77-1.9-6.71-4.52l-3.86 3C3.37 21.33 7.35 24 12 24z"
+                  />
+                </svg>
+                <h4 className="text-sm font-bold text-slate-800">Choose an account</h4>
+                <p className="text-[11px] text-slate-500">to continue to <span className="font-semibold text-indigo-600">ConstructAI</span></p>
+              </div>
+
+              {googleStatus ? (
+                <div className="py-8 text-center space-y-3">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-650 border-t-transparent mx-auto"></div>
+                  <p className="text-xs text-slate-600 font-semibold">{googleStatus}</p>
+                </div>
+              ) : !showCustomInput ? (
+                <div className="space-y-1.5">
+                  {mockGoogleAccounts.map((account, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => selectSandboxAccount(account)}
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition text-left cursor-pointer"
+                    >
+                      <div className="h-9 w-9 rounded-full bg-indigo-50 text-indigo-650 flex items-center justify-center font-bold text-xs shrink-0">
+                        {account.avatar}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">{account.name}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{account.email}</p>
+                      </div>
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setShowCustomInput(true)}
+                    className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition text-left cursor-pointer"
+                  >
+                    <div className="h-9 w-9 rounded-full bg-gray-50 text-slate-650 flex items-center justify-center font-bold text-xs shrink-0 border border-gray-100">
+                      <Plus className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800">Use another account</p>
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleCustomSandboxAutofill} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">
+                      Google Email Address
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="e.g. name@gmail.com"
+                      value={googleEmail}
+                      onChange={(e) => setGoogleEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowCustomInput(false)}
+                      type="button"
+                      className="flex-1 py-2.5 rounded-xl border border-gray-200 text-slate-500 hover:text-slate-700 transition text-xs font-bold cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-xs shadow-xs cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {!googleStatus && (
+                <div className="pt-2 text-center text-[10px] text-slate-400 border-t border-gray-100 leading-normal">
+                  To continue, Google will share your name, email address, language preference, and profile picture with ConstructAI.
+                </div>
+              )}
+
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

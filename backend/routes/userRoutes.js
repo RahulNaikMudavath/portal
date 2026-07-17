@@ -12,15 +12,21 @@ const {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   getProfile,
-  updateProfile
+  updateProfile,
+  deleteUser
 } = require("../controllers/userController");
+
+const upload = require("../middleware/uploadMiddleware");
 
 // 👤 Profile Routes
 router.get("/profile", protect, getProfile);
-router.put("/profile", protect, updateProfile);
+router.put("/profile", protect, upload.single("photo"), updateProfile);
 
 // 👑 Admin → get all users
 router.get("/", protect, isAdmin, getAllUsers);
+
+// 👑 Admin → delete user (revoke access)
+router.delete("/:id", protect, isAdmin, deleteUser);
 
 // 👑 Admin → get only clients
 router.get("/clients", protect, isAdmin, getClients);

@@ -18,7 +18,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: function() {
+      return !this.provider || this.provider === "local";
+    }
   },
   role: {
     type: String,
@@ -47,6 +49,77 @@ const userSchema = new mongoose.Schema({
   address: {
     type: String,
     default: ""
+  },
+  photo: {
+    type: String,
+    default: ""
+  },
+  skills: {
+    type: [String],
+    default: []
+  },
+  department: {
+    type: String,
+    default: ""
+  },
+  workMode: {
+    type: String,
+    enum: ["office", "field", "hybrid"],
+    default: "field"
+  },
+  experience: {
+    type: Number,
+    default: 0
+  },
+  availability: {
+    type: String,
+    enum: ["available", "busy", "on-leave"],
+    default: "available"
+  },
+  googleId: {
+    type: String,
+    default: ""
+  },
+  provider: {
+    type: String,
+    enum: ["local", "google"],
+    default: "local"
+  },
+  avatar: {
+    type: String,
+    default: ""
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  organization: {
+    type: String,
+    default: ""
+  },
+  engineerType: {
+    type: String,
+    enum: ["office", "field", "none"],
+    default: "none"
+  },
+  jobTitle: {
+    type: String,
+    default: ""
+  },
+  bio: {
+    type: String,
+    default: ""
+  },
+  preferredLanguage: {
+    type: String,
+    default: "English"
+  },
+  emergencyContact: {
+    type: String,
+    default: ""
+  },
+  lastLogin: {
+    type: Date
   }
 }, { timestamps: true });
 

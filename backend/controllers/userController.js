@@ -123,10 +123,12 @@ exports.getEngineers = async (req, res) => {
   }
 };
 
-// ✏️ Update Logged In User Profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phone, city, company, address } = req.body;
+    const { 
+      name, phone, city, company, address, 
+      skills, department, workMode, experience, availability 
+    } = req.body;
 
     const user = await User.findById(req.user.id);
 
@@ -142,6 +144,23 @@ exports.updateProfile = async (req, res) => {
     if (company !== undefined) user.company = company;
     if (address !== undefined) user.address = address;
 
+    if (skills !== undefined) {
+      try {
+        user.skills = typeof skills === "string" ? JSON.parse(skills) : skills;
+      } catch (e) {
+        user.skills = String(skills).split(",").map(s => s.trim()).filter(Boolean);
+      }
+    }
+    
+    if (department !== undefined) user.department = department;
+    if (workMode !== undefined) user.workMode = workMode;
+    if (experience !== undefined) user.experience = Number(experience) || 0;
+    if (availability !== undefined) user.availability = availability;
+
+    if (req.file) {
+      user.photo = req.file.path;
+    }
+
     await user.save();
 
     const updatedUser = await User.findById(user._id).select("-password");
@@ -156,5 +175,29 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({
       error: error.message
     });
+  }
+};
+
+// 👑 Admin -> Delete user (revoke access)
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (req.user.id === id) {
+      return res.status(400).json({ message: "You cannot revoke access for your own account." });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: `Access revoked and profile deleted successfully for ${user.name}.`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

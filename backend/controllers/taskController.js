@@ -88,6 +88,7 @@ const updateTaskProgress = async (req, res) => {
         taskId: task._id.toString(),
         task: updatedTask,
       });
+      io.emit("taskDashboardUpdate", { taskId: task._id.toString() });
     }
 
     res.status(200).json(updatedTask);
@@ -204,6 +205,7 @@ exports.createTask = async (req, res) => {
 
     // 🔔 Real-time socket event
     io.emit("newNotification", notification);
+    io.emit("taskDashboardUpdate", { taskId: task._id });
 
     res.status(201).json(task);
 
@@ -246,14 +248,17 @@ exports.completeTask = async (req, res) => {
     }
 
     // Only assigned client can complete
-    if (task.assignedTo.toString() !== req.user.id) {
+    if (!task.assignedTo || task.assignedTo.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not your task" });
-      console.log("TASK ASSIGNED TO:", task.assignedTo.toString());
-console.log("CURRENT USER:", req.user.id);
     }
 
     task.status = "completed";
     await task.save();
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("taskDashboardUpdate", { taskId: task._id });
+    }
 
     res.json({
       message: "Task completed",
@@ -275,7 +280,7 @@ exports.submitTask = async (req, res) => {
     }
 
     // only assigned client
-    if (task.assignedTo.toString() !== req.user.id) {
+    if (!task.assignedTo || task.assignedTo.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not your task" });
     }
 
@@ -321,6 +326,7 @@ if (task.startedAt) {
 
     // 🔔 Real-time socket event
     io.emit("newNotification", notification);
+    io.emit("taskDashboardUpdate", { taskId: task._id });
 
     res.json({
       message: "Work submitted successfully",
@@ -341,7 +347,7 @@ exports.startTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.assignedTo.toString() !== req.user.id) {
+    if (!task.assignedTo || task.assignedTo.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not your task" });
     }
 
@@ -367,6 +373,11 @@ exports.startTask = async (req, res) => {
   action: "Started task",
   taskId: task._id
 });
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("taskDashboardUpdate", { taskId: task._id });
+    }
 
     res.json({
       message: "Task started successfully",
@@ -396,6 +407,11 @@ exports.updateTask = async (req, res) => {
       req.body,
       { new: true }
     );
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("taskDashboardUpdate", { taskId: updatedTask._id });
+    }
 
     res.json(updatedTask);
 
@@ -484,6 +500,7 @@ exports.reviewTask = async (req, res) => {
 
     // 🔔 Real-time socket event
     io.emit("newNotification", notification);
+    io.emit("taskDashboardUpdate", { taskId: task._id });
 
     res.json({
       message: `Task ${status}`,
@@ -560,6 +577,13 @@ exports.getRecentActivities = async (req, res) => {
   }
 };
 
+const emitDashboardUpdate = (req, taskId) => {
+  const io = req.app.get("io");
+  if (io) {
+    io.emit("taskDashboardUpdate", { taskId });
+  }
+};
+
 const addAttachment = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -567,7 +591,7 @@ const addAttachment = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.assignedTo.toString() !== req.user.id && req.user.role !== "admin") {
+    if ((!task.assignedTo || task.assignedTo.toString() !== req.user.id) && req.user.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -582,6 +606,7 @@ const addAttachment = async (req, res) => {
     });
 
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -590,26 +615,30 @@ const addAttachment = async (req, res) => {
 
 const updateVisitStatus = async (req, res) => {
   try {
-    const { visitStatus } = req.body;
+    const { visitStatus, locationCoords } = req.body;
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (task.assignedTo.toString() !== req.user.id && req.user.role !== "admin") {
+    if ((!task.assignedTo || task.assignedTo.toString() !== req.user.id) && req.user.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
     task.visitStatus = visitStatus;
+    if (locationCoords) {
+      task.locationCoords = locationCoords;
+    }
 
     task.activityLog.push({
       action: `Status: ${visitStatus.toUpperCase().replace("-", " ")}`,
       icon: "🚗",
       user: req.user.id,
-      remarks: `Visit status changed to ${visitStatus}`
+      remarks: `Visit status changed to ${visitStatus}${locationCoords ? ` (GPS: ${locationCoords})` : ""}`
     });
 
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -634,6 +663,7 @@ const addMaterial = async (req, res) => {
     });
 
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -662,6 +692,7 @@ const addTaskNote = async (req, res) => {
     });
 
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -688,6 +719,7 @@ const editTaskNote = async (req, res) => {
 
     note.text = text;
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -713,6 +745,7 @@ const deleteTaskNote = async (req, res) => {
 
     task.notes.pull(noteId);
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -741,6 +774,7 @@ const submitCustomerSignOff = async (req, res) => {
     });
 
     await task.save();
+    emitDashboardUpdate(req, task._id);
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });

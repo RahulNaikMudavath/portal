@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import AdminLayout from "../../layouts/AdminLayout";
 import ChatSidebar from "../../components/whatsapp/ChatSidebar";
@@ -12,45 +12,40 @@ function WhatsAppInbox() {
 
     const [chats, setChats] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
+    const selectedChatRef = useRef(null);
+
+    // Keep ref in sync with active state
+    useEffect(() => {
+        selectedChatRef.current = selectedChat;
+    }, [selectedChat]);
 
     const loadChats = async () => {
-
         try {
-
             const data = await getConversations();
-
             setChats(data);
 
-            if (!selectedChat && data.length > 0) {
+            const currentSelected = selectedChatRef.current;
+            if (!currentSelected && data.length > 0) {
                 setSelectedChat(data[0]);
                 return;
             }
 
-            if (selectedChat) {
-
+            if (currentSelected) {
                 const updatedChat = data.find(
                     chat =>
                         chat.conversationId ===
-                        selectedChat.conversationId
+                        currentSelected.conversationId
                 );
-
                 if (updatedChat)
                     setSelectedChat(updatedChat);
-
             }
-
         }
-
         catch (err) {
-
             console.error(err);
-
         }
-
     };
 
     useEffect(() => {
-
         loadChats();
 
         // Listen for new messages
@@ -70,8 +65,8 @@ function WhatsAppInbox() {
             socket.off("newMessage");
             socket.off("workRequestAssigned");
         };
-
-    }, [selectedChat]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     console.log("Selected Chat:", selectedChat);
 

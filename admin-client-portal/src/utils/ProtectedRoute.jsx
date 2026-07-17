@@ -8,6 +8,10 @@ function ProtectedRoute({ children, role }) {
     return <Navigate to="/" />;
   }
 
+  if (user && user.isOnboarded === false) {
+    return <Navigate to="/complete-profile" />;
+  }
+
   if (role && user.role !== role) {
     return <Navigate to="/" />;
   }
