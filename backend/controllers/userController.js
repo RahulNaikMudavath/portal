@@ -4,7 +4,17 @@ const Notification = require("../models/Notification");
 // 👑 Get all users (Admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password"); // hide password
+    const org = req.user.organization || req.user.company || "";
+    let query = { $or: [{ createdBy: req.user.id }, { _id: req.user.id }] };
+    if (org) {
+      query = {
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      };
+    }
+    const users = await User.find(query).select("-password"); // hide password
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -16,18 +26,39 @@ const escapeRegex = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 };
 
-// 👨‍💻 Get only clients
+// 👨‍💻 Get only clients and engineers
 exports.getClients = async (req, res) => {
   try {
     const { search } = req.query;
-    const query = { role: "client" };
+    const org = req.user.organization || req.user.company || "";
+    
+    let query = { role: { $in: ["client", "engineer"] } };
+    if (org) {
+      query.$or = [
+        { organization: org },
+        { company: org },
+        { createdBy: req.user.id },
+        { createdBy: { $exists: false } },
+        { createdBy: null }
+      ];
+    }
 
     if (search) {
       const regex = new RegExp(escapeRegex(search), "i");
-      query.$or = [
+      const searchOr = [
         { name: regex },
-        { rollNumber: regex }
+        { rollNumber: regex },
+        { email: regex }
       ];
+      if (query.$or) {
+        query.$and = [
+          { $or: query.$or },
+          { $or: searchOr }
+        ];
+        delete query.$or;
+      } else {
+        query.$or = searchOr;
+      }
     }
 
     const clients = await User.find(query).select("-password");
@@ -106,13 +137,28 @@ exports.getProfile = async (req, res) => {
     });
   }
 };
+
 exports.getEngineers = async (req, res) => {
   try {
     const User = require("../models/User");
+    const org = req.user.organization || req.user.company || "";
+    let query = { role: { $in: ["client", "engineer"] } };
+    if (org) {
+      query = {
+        role: { $in: ["client", "engineer"] },
+        $or: [
+          { organization: org },
+          { company: org },
+          { createdBy: req.user.id },
+          { createdBy: { $exists: false } },
+          { createdBy: null }
+        ]
+      };
+    }
 
     const engineers = await User.find(
-      { role: "client" }, // Change to "engineer" later if you add that role
-      "_id name email"
+      query,
+      "_id name email rollNumber phone city department workMode availability photo"
     );
 
     res.json(engineers);
@@ -196,6 +242,42 @@ exports.deleteUser = async (req, res) => {
 
     res.status(200).json({
       message: `Access revoked and profile deleted successfully for ${user.name}.`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 📍 Update live GPS location of logged-in user
+exports.updateLocation = async (req, res) => {
+  try {
+    const { lat, lng, address } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.currentLocation = {
+      lat: Number(lat) || null,
+      lng: Number(lng) || null,
+      address: address || "",
+      updatedAt: new Date()
+    };
+
+    await user.save();
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("engineer_location_updated", {
+        userId: user._id,
+        currentLocation: user.currentLocation
+      });
+    }
+
+    res.status(200).json({
+      message: "Location updated successfully",
+      currentLocation: user.currentLocation
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

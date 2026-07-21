@@ -3,7 +3,7 @@ import MessageBubble from "./MessageBubble";
 const Conversation = ({ chat }) => {
   if (!chat) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500">
+      <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">
         Select a conversation
       </div>
     );
@@ -35,8 +35,8 @@ const Conversation = ({ chat }) => {
       ))}
 
       {messages.length === 0 && (
-        <div className="text-center text-slate-500 mt-10">
-          No messages
+        <div className="text-center text-slate-400 dark:text-slate-500 font-medium my-auto py-12">
+          💬 No messages in this conversation yet.
         </div>
       )}
     </div>

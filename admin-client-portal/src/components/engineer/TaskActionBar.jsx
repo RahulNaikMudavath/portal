@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { addTaskComment } from "../../services/commentService";
-import { uploadTaskAttachment, addMaterial } from "../../services/taskService";
+import { uploadTaskAttachment, addMaterial, addTaskNote } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function TaskActionBar({
@@ -28,7 +28,17 @@ export default function TaskActionBar({
   const fileInputRef = useRef(null);
   const photoInputRef = useRef(null);
 
-  const status = task?.status || "pending";
+  const getNormalizedStatus = (dbStatus) => {
+    if (!dbStatus || dbStatus === "assigned" || dbStatus === "pending" || dbStatus === "accepted") {
+      return "pending";
+    }
+    if (dbStatus === "working" || dbStatus === "in-progress") {
+      return "in-progress";
+    }
+    return "completed";
+  };
+
+  const status = getNormalizedStatus(task?.status);
   const reviewStatus = task?.reviewStatus;
   const isField = task?.taskCategory === "field";
 
@@ -38,7 +48,10 @@ export default function TaskActionBar({
     if (!noteText.trim()) return;
     try {
       setIsSubmittingNote(true);
-      await addTaskComment(task._id, noteText.trim());
+      await Promise.all([
+        addTaskComment(task._id, noteText.trim()),
+        addTaskNote(task._id, noteText.trim())
+      ]);
       setNoteText("");
       setActiveForm(null);
       if (onRefresh) onRefresh();

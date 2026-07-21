@@ -7,12 +7,12 @@ function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text transition-colors duration-300">
+    <div className="flex min-h-screen bg-background text-text-primary transition-colors duration-200">
       {/* Sidebar */}
       <Sidebar open={open} setOpen={setOpen} />
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 md:pl-64">
         <Navbar setOpen={setOpen} />
 
         <main className="p-4 md:p-6">

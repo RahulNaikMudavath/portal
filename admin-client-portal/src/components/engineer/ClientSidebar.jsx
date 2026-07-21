@@ -16,9 +16,9 @@ function ClientSidebar({ open, setOpen }) {
   return (
     <aside
       className={`
-      fixed md:static top-0 left-0 z-50
-      h-screen w-64
-      bg-slate-950
+      fixed top-0 left-0 z-50
+      h-screen w-64 shrink-0
+      bg-slate-900 text-text-primary
       border-r border-slate-800
       transform transition-transform duration-300
       ${open ? "translate-x-0" : "-translate-x-full"}
@@ -27,11 +27,11 @@ function ClientSidebar({ open, setOpen }) {
     >
       <div className="p-6">
 
-        <h1 className="text-white text-2xl font-bold mb-8">
-          Client Portal
+        <h1 className="text-text-primary text-xl font-bold flex items-center gap-2 mb-8">
+          <span>🚀</span> Client Portal
         </h1>
 
-        <nav className="space-y-2">
+        <nav className="space-y-1">
 
           {links.map((link) => (
             <Link
@@ -39,11 +39,11 @@ function ClientSidebar({ open, setOpen }) {
               to={link.path}
               onClick={() => setOpen(false)}
               className={`
-                block px-4 py-3 rounded-xl
+                block px-4 py-2.5 rounded-xl font-semibold text-small transition-all duration-200
                 ${
                   location.pathname === link.path
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-300 hover:bg-slate-800"
+                    ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-xs"
+                    : "text-text-secondary hover:bg-card-hover hover:text-text-primary"
                 }
               `}
             >

@@ -87,12 +87,35 @@ export default function TravelCard({ task, onRefresh }) {
         )}
       </div>
 
-      {task?.locationCoords && (
-        <div className="bg-slate-950 border border-slate-850 rounded-xl p-3 text-xs flex items-center justify-between text-slate-350">
-          <span>On-Site GPS Target:</span>
-          <span className="font-mono text-indigo-400 font-bold">{task.locationCoords}</span>
+      {/* Live Site Address & GPS Target */}
+      <div className="bg-slate-955 border border-slate-800 rounded-xl p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Site Destination</p>
+            <p className="text-sm font-bold text-white mt-0.5">
+              {task?.siteAddress || task?.locationCoords || "Field Site Address"}
+            </p>
+            {task?.customerName && (
+              <p className="text-xs text-slate-400 mt-0.5">Customer: {task.customerName}</p>
+            )}
+          </div>
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(task?.locationCoords || task?.siteAddress || "Site Location")}&travelmode=driving`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <span>🗺️ Live Maps Navigation</span>
+          </a>
         </div>
-      )}
+
+        {task?.locationCoords && (
+          <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-xs text-slate-350">
+            <span>GPS Coordinates:</span>
+            <span className="font-mono text-indigo-400 font-bold">{task.locationCoords}</span>
+          </div>
+        )}
+      </div>
 
       {/* Visual Stepper */}
       <div className="relative pt-2 pb-1.5">

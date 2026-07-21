@@ -47,11 +47,11 @@ const getTaskComments = async (req, res) => {
 const addTaskComment = async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { message } = req.body;
+    const { message, audioUrl } = req.body;
 
-    if (!message || !message.trim()) {
+    if ((!message || !message.trim()) && !audioUrl) {
       return res.status(400).json({
-        message: "Comment message is required",
+        message: "Comment message or voice note is required",
       });
     }
 
@@ -87,14 +87,15 @@ const addTaskComment = async (req, res) => {
     const comment = await Comment.create({
       taskId,
       sender: loggedInUserId,
-      message: message.trim(),
+      message: (message || "").trim() || (audioUrl ? "🎤 Voice Note" : ""),
+      audioUrl: audioUrl || "",
     });
 
     task.activityLog.push({
-      action: "Note Added",
-      icon: "📝",
+      action: audioUrl ? "Voice Note Added" : "Note Added",
+      icon: audioUrl ? "🎙️" : "📝",
       user: loggedInUserId,
-      remarks: message.trim()
+      remarks: audioUrl ? "Voice Recording Attached" : (message || "").trim()
     });
     await task.save();
 

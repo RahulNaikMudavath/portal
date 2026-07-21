@@ -1,7 +1,323 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-  transition-colors: color 300ms ease;
+:root {
+  /* Light Theme Color Tokens */
+  --background: #F8FAFC;
+  --secondary-background: #FFFFFF;
+  --surface-card: #FFFFFF;
+  --card-hover: #F1F5F9;
+  --border: #E2E8F0;
+  
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #0284C7;
+  
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --placeholder: #94A3B8;
+
+  --font-sans: 'Inter', 'Segoe UI', Roboto, sans-serif;
+}
+
+.dark {
+  /* Dark Theme Color Tokens */
+  --background: #020617;
+  --secondary-background: #0F172A;
+  --surface-card: #111827;
+  --card-hover: #1E293B;
+  --border: #334155;
+  
+  --primary: #6366F1;
+  --primary-hover: #4F46E5;
+  
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #38BDF8;
+  
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --placeholder: #64748B;
+}
+
+/* Base style resets */
+html {
+  font-size: 14.5px; /* Globally scales down all rem-based typography (text-sm, text-base, text-lg, etc.) */
+}
+
+* {
+  font-family: var(--font-sans);
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background) !important;
+  color: var(--text-primary) !important;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+  line-height: 1.5;
+}
+
+/* Typography styles matching design system specs */
+h1, .h1-style {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+h2, .h2-style {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+h3, .h3-style {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+h4, .h4-style {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+h5, .h5-style {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+p, .body-style {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.text-small {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.text-caption {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.btn-text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Ensure dropdown options and form controls display cleanly */
+select option,
+select {
+  background-color: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Scrollbar customization to match dark/light modes */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* Global Overrides mapping tailwind layout classes to CSS variables */
+.bg-light-bg,
+.bg-slate-50 {
+  background-color: var(--background) !important;
+}
+
+.bg-white {
+  background-color: var(--secondary-background) !important;
+}
+
+.bg-slate-900,
+.bg-slate-950,
+.bg-slate-955,
+.bg-slate-800,
+.bg-slate-850,
+.bg-slate-900\/50,
+.bg-slate-950\/30,
+.bg-slate-900\/40,
+.bg-slate-955\/40,
+.bg-slate-950\/20,
+.bg-slate-900\/30,
+.bg-slate-900\/80,
+.bg-slate-950\/80,
+.bg-slate-950\/40,
+.bg-slate-955\/20,
+.bg-slate-900\/20,
+.bg-slate-100 {
+  background-color: var(--surface-card) !important;
+}
+
+.bg-slate-950,
+.bg-slate-955 {
+  background-color: var(--secondary-background) !important;
+}
+
+.bg-slate-800 {
+  background-color: var(--card-hover) !important;
+}
+
+.border-slate-100,
+.border-slate-200,
+.border-slate-800,
+.border-slate-850,
+.border-slate-700,
+.border-slate-800\/80,
+.border-slate-700\/50,
+.border-slate-850\/40 {
+  border-color: var(--border) !important;
+}
+
+/* Typography elements color mapping overrides */
+h1.text-white,
+h2.text-white,
+h3.text-white,
+h4.text-white,
+h5.text-white,
+h6.text-white,
+.text-white,
+.text-slate-100,
+.text-slate-200,
+.text-slate-800,
+.text-slate-900 {
+  color: var(--text-primary) !important;
+}
+
+.text-slate-300,
+.text-slate-350,
+.text-slate-400,
+.text-slate-450,
+.text-slate-650,
+.text-slate-700,
+.text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+.text-slate-500,
+.text-slate-550 {
+  color: var(--text-muted) !important;
+}
+
+/* Reset button text inside overridden containers so they don't break white text badges/buttons */
+button.text-white,
+button.text-white *,
+a.text-white,
+a.text-white *,
+button.bg-indigo-650,
+button.bg-indigo-650 *,
+button.bg-indigo-600,
+button.bg-indigo-600 *,
+button.bg-primary,
+button.bg-primary *,
+.bg-emerald-600,
+.bg-emerald-600 *,
+.bg-red-500,
+.bg-red-500 *,
+.bg-danger,
+.bg-danger * {
+  color: #ffffff !important;
+}
+
+/* Card container global defaults mapping */
+.rounded-2xl,
+.rounded-3xl,
+.bg-card,
+.rounded-2xl.border,
+.rounded-3xl.border {
+  border-radius: 16px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Input design standardization rules */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="date"],
+select,
+textarea {
+  background-color: var(--secondary-background) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  font-size: 15px !important;
+  transition: all 150ms ease !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder) !important;
+}
+
+/* SaaS Table design rules */
+table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+th {
+  background-color: var(--card-hover) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+tr:hover {
+  background-color: var(--card-hover) !important;
+}
+
+td {
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Button animation mapping */
+button {
+  transition: all 200ms ease !important;
+}
+button:active {
+  transform: scale(0.98) !important;
 }

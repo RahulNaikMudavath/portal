@@ -194,6 +194,26 @@ exports.createTask = async (req, res) => {
       taskId: task._id
     });
 
+    // Auto-create CalendarEvent for phone calendar sync & alarms
+    try {
+      const CalendarEvent = require("../models/CalendarEvent");
+      const eventStart = deadline ? new Date(deadline) : new Date();
+      const eventEnd = new Date(eventStart.getTime() + 3600000);
+      await CalendarEvent.create({
+        title: `📌 [Task] ${title}`,
+        description: `Task assigned to engineer.\nCustomer: ${customerName || "N/A"}\nSite: ${siteAddress || "Office/Field"}`,
+        eventType: taskCategory === "field" ? "site-visit" : "task-deadline",
+        task: task._id,
+        start: eventStart,
+        end: eventEnd,
+        engineers: [assignedTo],
+        createdBy: req.user.id,
+        location: siteAddress || "Field Site"
+      });
+    } catch (e) {
+      console.warn("Auto calendar hook warning:", e.message);
+    }
+
     // 📢 Create notification for assigned client
     const notification = await Notification.create({
       userId: assignedTo,
@@ -221,7 +241,21 @@ exports.getTasks = async (req, res) => {
     let tasks;
 
     if (req.user.role === "admin") {
-      tasks = await Task.find()
+      const org = req.user.organization || req.user.company || "";
+      let query = { createdBy: req.user.id };
+      if (org) {
+        const User = require("../models/User");
+        const adminsInOrg = await User.find({
+          $or: [
+            { organization: org },
+            { company: org }
+          ]
+        }).distinct("_id");
+        if (adminsInOrg.length > 0) {
+          query = { createdBy: { $in: adminsInOrg } };
+        }
+      }
+      tasks = await Task.find(query)
         .populate("assignedTo", "name email")
         .sort({ createdAt: -1 });
     } else {
@@ -358,7 +392,7 @@ exports.startTask = async (req, res) => {
       });
     }
 
-    task.status = "in-progress";
+    task.status = "working";
     task.startedAt = new Date();
 
     task.activityLog.push({
@@ -423,7 +457,7 @@ exports.updateTask = async (req, res) => {
 // ✅ Review Task (Admin only)
 exports.reviewTask = async (req, res) => {
   try {
-    const { status } = req.body; // approved / rejected
+    const { status, adminRating, reason } = req.body; // approved / rejected
     const io = req.app.get("io");
 
     const task = await Task.findById(req.params.id);
@@ -440,12 +474,18 @@ exports.reviewTask = async (req, res) => {
       return res.status(400).json({ message: "Approved tasks are locked and cannot be changed" });
     }
 
-    const { reason } = req.body;
     if (status !== "approved" && (!reason || !reason.trim())) {
       return res.status(400).json({ message: "Reason is required for rejection/rework/return actions" });
     }
 
     task.reviewStatus = status === "approved" ? "approved" : "rejected";
+
+    if (adminRating && Number(adminRating) > 0) {
+      task.adminRating = Math.min(Math.max(Number(adminRating), 1), 5);
+    }
+    if (reason && reason.trim()) {
+      task.adminReviewFeedback = reason.trim();
+    }
 
     let actionLabel = "Task Approved";
     let actionIcon = "✅";
@@ -460,11 +500,16 @@ exports.reviewTask = async (req, res) => {
       actionIcon = "💬";
     }
 
+    let remarksText = reason || "Approved by administrator";
+    if (adminRating && Number(adminRating) > 0) {
+      remarksText += ` (Rated: ${adminRating}/5 ★)`;
+    }
+
     task.activityLog.push({
       action: actionLabel,
       icon: actionIcon,
       user: req.user.id,
-      remarks: reason || "Approved by administrator"
+      remarks: remarksText
     });
 
     await task.save();
@@ -539,10 +584,25 @@ exports.deleteTask = async (req, res) => {
 // 📊 Get Task Statistics (Admin only)
 exports.getStats = async (req, res) => {
   try {
-    const total = await Task.countDocuments();
-    const pending = await Task.countDocuments({ status: "pending" });
-    const inProgress = await Task.countDocuments({ status: "in-progress" });
-    const completed = await Task.countDocuments({ status: "completed" });
+    const org = req.user.organization || req.user.company || "";
+    let query = { createdBy: req.user.id };
+    if (org) {
+      const User = require("../models/User");
+      const adminsInOrg = await User.find({
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      }).distinct("_id");
+      if (adminsInOrg.length > 0) {
+        query = { createdBy: { $in: adminsInOrg } };
+      }
+    }
+
+    const total = await Task.countDocuments(query);
+    const pending = await Task.countDocuments({ ...query, status: "pending" });
+    const inProgress = await Task.countDocuments({ ...query, status: "in-progress" });
+    const completed = await Task.countDocuments({ ...query, status: "completed" });
 
     res.json({
       total,
@@ -565,7 +625,22 @@ exports.getRecentActivities = async (req, res) => {
       });
     }
 
-    const activities = await Activity.find()
+    const org = req.user.organization || req.user.company || "";
+    let query = { user: req.user.id };
+    if (org) {
+      const User = require("../models/User");
+      const adminsInOrg = await User.find({
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      }).distinct("_id");
+      if (adminsInOrg.length > 0) {
+        query = { user: { $in: adminsInOrg } };
+      }
+    }
+
+    const activities = await Activity.find(query)
       .sort({ createdAt: -1 })
       .limit(12);
 
@@ -781,6 +856,37 @@ const submitCustomerSignOff = async (req, res) => {
   }
 };
 
+const deleteTaskAttachment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fileUrl } = req.body;
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (task.files && fileUrl) {
+      task.files = task.files.filter(f => f !== fileUrl && !fileUrl.endsWith(f));
+    }
+    if (task.submissionFiles && fileUrl) {
+      task.submissionFiles = task.submissionFiles.filter(f => f !== fileUrl && !fileUrl.endsWith(f));
+    }
+
+    task.activityLog.push({
+      action: "Media Removed",
+      icon: "🗑️",
+      user: req.user.id,
+      remarks: "Media attachment removed"
+    });
+
+    await task.save();
+    emitDashboardUpdate(req, task._id);
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.updateVisitStatus = updateVisitStatus;
 exports.addAttachment = addAttachment;
 exports.updateTaskProgress = updateTaskProgress;
@@ -788,5 +894,6 @@ exports.addMaterial = addMaterial;
 exports.addTaskNote = addTaskNote;
 exports.editTaskNote = editTaskNote;
 exports.deleteTaskNote = deleteTaskNote;
+exports.deleteTaskAttachment = deleteTaskAttachment;
 exports.submitCustomerSignOff = submitCustomerSignOff;
 

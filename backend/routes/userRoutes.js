@@ -13,7 +13,8 @@ const {
   markAllNotificationsAsRead,
   getProfile,
   updateProfile,
-  deleteUser
+  deleteUser,
+  updateLocation
 } = require("../controllers/userController");
 
 const upload = require("../middleware/uploadMiddleware");
@@ -21,6 +22,7 @@ const upload = require("../middleware/uploadMiddleware");
 // 👤 Profile Routes
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, upload.single("photo"), updateProfile);
+router.put("/location", protect, updateLocation);
 
 // 👑 Admin → get all users
 router.get("/", protect, isAdmin, getAllUsers);

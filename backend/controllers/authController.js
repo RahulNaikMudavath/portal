@@ -38,6 +38,7 @@ exports.signup = async (req, res) => {
       phone,
       city,
       company,
+      organization: company || "",
       address,
       skills: parsedSkills,
       department: department || "",
@@ -46,6 +47,8 @@ exports.signup = async (req, res) => {
       availability: availability || "available",
       photo: photo || ""
     });
+    const { initializeUserDashboard } = require("../services/dashboardInitializationService");
+    await initializeUserDashboard(user._id);
 
     res.status(201).json({ message: "User created", user });
 
@@ -154,6 +157,8 @@ exports.googleLogin = async (req, res) => {
         role: "client", // default client role
         lastLogin: new Date()
       });
+      const { initializeUserDashboard } = require("../services/dashboardInitializationService");
+      await initializeUserDashboard(user._id);
     } else {
       // Link google profile details to existing account
       user.googleId = user.googleId || payload.sub;
@@ -235,6 +240,9 @@ exports.completeProfile = async (req, res) => {
     }
 
     await user.save();
+
+    const { initializeUserDashboard } = require("../services/dashboardInitializationService");
+    await initializeUserDashboard(user._id);
 
     // Re-sign token with correct role
     const jwtToken = jwt.sign(

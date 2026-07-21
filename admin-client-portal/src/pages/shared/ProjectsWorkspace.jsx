@@ -15,6 +15,7 @@ import {
 import { getEngineers } from "../../services/userService";
 import { getTasks } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
+import AIAnalysisCard from "../../components/engineer/AIAnalysisCard";
 
 export default function ProjectsWorkspace({ role = "admin" }) {
   const Layout = role === "admin" ? AdminLayout : ClientLayout;
@@ -30,6 +31,7 @@ export default function ProjectsWorkspace({ role = "admin" }) {
   const [loc, setLoc] = useState("");
   const [budgetVal, setBudgetVal] = useState("");
   const [selectedEngs, setSelectedEngs] = useState([]);
+  const [createProjectFiles, setCreateProjectFiles] = useState([]);
   const [engineersList, setEngineersList] = useState([]);
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
 
@@ -145,14 +147,22 @@ export default function ProjectsWorkspace({ role = "admin" }) {
         budget: Number(budgetVal) || 0,
         engineers: selectedEngs,
       });
-      alert("Project created successfully");
+
+      if (createProjectFiles.length > 0 && res.data?._id) {
+        const formData = new FormData();
+        createProjectFiles.forEach((file) => formData.append("files", file));
+        await uploadProjectDocument(res.data._id, formData);
+      }
+
+      alert("Project created successfully with media attachments!");
       setProjectName("");
       setCustName("");
       setLoc("");
       setBudgetVal("");
       setSelectedEngs([]);
+      setCreateProjectFiles([]);
       setShowCreateModal(false);
-      await loadWorkspace();
+      await loadWorkspace(true);
     } catch (err) {
       console.error(err);
       alert("Failed to create project");
@@ -310,9 +320,26 @@ export default function ProjectsWorkspace({ role = "admin" }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {projects.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-16 text-center max-w-2xl mx-auto mt-12 shadow-lg">
+          <span className="text-6xl block mb-6">🏗️</span>
+          <h3 className="text-xl font-bold text-white">No Projects Yet</h3>
+          <p className="text-sm text-slate-400 mt-2 max-w-sm mx-auto">
+            You don't have any projects configured in your isolated company workspace. Create your first project to get started.
+          </p>
+          {role === "admin" && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-xl transition shadow-md"
+            >
+              ➕ Create Your First Project
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side (col-span-3) - Search, filter & Projects List */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-4 lg:sticky lg:top-6 max-h-[calc(100vh-100px)] overflow-y-auto pr-1">
           <div className="bg-slate-900 border border-slate-850 rounded-2xl p-4 space-y-3">
             <input
               value={search}
@@ -858,6 +885,7 @@ export default function ProjectsWorkspace({ role = "admin" }) {
           )}
         </div>
       </div>
+      )}
 
       {/* Creation Modal (Admin only) */}
       {showCreateModal && (
@@ -934,6 +962,29 @@ export default function ProjectsWorkspace({ role = "admin" }) {
                   ))}
                 </select>
                 <span className="text-[10px] text-slate-500 mt-1 block">Hold Ctrl/Cmd to select multiple</span>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Attach Spec Sheet / PDFs / CAD / Media</label>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.dwg,.csv,.xlsx,image/*,video/*"
+                  onChange={(e) => setCreateProjectFiles(Array.from(e.target.files))}
+                  className="w-full bg-slate-955 border border-slate-850 rounded-lg p-2 text-slate-300 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+                />
+                {createProjectFiles.length > 0 && (
+                  <div className="mt-1.5 space-y-1 bg-slate-950 p-2.5 rounded-lg border border-indigo-500/30">
+                    <p className="text-[10px] text-indigo-400 font-bold">
+                      📎 {createProjectFiles.length} file(s) attached:
+                    </p>
+                    <ul className="text-[10px] text-slate-300 list-disc list-inside max-h-16 overflow-y-auto space-y-0.5 font-mono">
+                      {createProjectFiles.map((f, i) => (
+                        <li key={i} className="truncate">{f.name} ({(f.size / 1024).toFixed(1)} KB)</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 text-xs pt-2">

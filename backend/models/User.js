@@ -120,6 +120,12 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  currentLocation: {
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+    address: { type: String, default: "" },
+    updatedAt: { type: Date, default: null }
   }
 }, { timestamps: true });
 

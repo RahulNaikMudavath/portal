@@ -256,16 +256,21 @@ function AdminDashboard() {
                 )}
               </section>
 
-              {/* Client Directory */}
+              {/* Engineer Directory */}
               <section>
-                <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
-                      Client Directory
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xl font-bold text-light-text dark:text-dark-text">
+                        👨‍💻 Engineers & Field Team Directory
+                      </h3>
+                      <span className="rounded-full bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                        {clients.length} Engineers
+                      </span>
+                    </div>
 
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Search clients by name or unique client ID.
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      View all registered engineers, field technicians, and active team members.
                     </p>
                   </div>
 
@@ -274,13 +279,13 @@ function AdminDashboard() {
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Search name or client ID"
-                      className="w-full rounded-xl border border-light-border bg-light-card px-4 py-3 text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80"
+                      placeholder="Search engineer name, phone or ID..."
+                      className="w-full rounded-2xl border border-light-border bg-light-card px-4 py-3 text-sm text-light-text outline-none focus:ring-2 focus:ring-indigo-500 dark:border-dark-border dark:bg-dark-card dark:text-dark-text sm:w-80 shadow-xs"
                     />
 
                     <button
                       onClick={handleSearch}
-                      className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+                      className="rounded-2xl bg-indigo-600 px-6 py-3 font-bold text-xs uppercase tracking-wider text-white transition hover:bg-indigo-700 shadow-md cursor-pointer"
                     >
                       Search
                     </button>
@@ -288,12 +293,12 @@ function AdminDashboard() {
                 </div>
 
                 {clientsLoading ? (
-                  <EmptyBox text="Loading clients..." />
+                  <EmptyBox text="Loading engineers..." />
                 ) : clients.length === 0 ? (
-                  <EmptyBox text="No clients found." />
+                  <EmptyBox text="No registered engineers found." />
                 ) : (
                   <div className="grid gap-4 lg:grid-cols-2">
-                    {clients.slice(0, 8).map((client) => (
+                    {clients.map((client) => (
                       <ClientCard key={client._id} client={client} />
                     ))}
                   </div>
@@ -301,17 +306,26 @@ function AdminDashboard() {
               </section>
 
               {/* Active Tasks */}
-              <section>
-                <SectionHeader
-                  title="Active Tasks"
-                  subtitle="Tasks that are pending or currently in progress."
-                />
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-light-text dark:text-dark-text flex items-center gap-2">
+                      <span>⚡ Active Tasks & On-Site Deployments</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Tasks currently assigned to field engineers or in progress.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                    {activeTasks.length} Active
+                  </span>
+                </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">
                   {activeTasks.length === 0 ? (
-                    <EmptyBox text="No active tasks." />
+                    <EmptyBox text="No active tasks currently assigned." />
                   ) : (
-                    activeTasks.slice(0, 6).map((task) => (
+                    activeTasks.map((task) => (
                       <TaskCard
                         key={task._id}
                         task={task}
@@ -323,17 +337,26 @@ function AdminDashboard() {
               </section>
 
               {/* Completed Tasks */}
-              <section>
-                <SectionHeader
-                  title="Task History"
-                  subtitle="Completed tasks and reviewed submissions."
-                />
+              <section className="space-y-4 pt-4 border-t border-light-border/60 dark:border-dark-border/60">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-light-text dark:text-dark-text flex items-center gap-2">
+                      <span>✅ Evaluated Task History</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Completed assignments, star ratings, and approved submissions.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    {completedTasks.length} Completed
+                  </span>
+                </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">
                   {completedTasks.length === 0 ? (
                     <EmptyBox text="No completed tasks yet." />
                   ) : (
-                    completedTasks.slice(0, 6).map((task) => (
+                    completedTasks.map((task) => (
                       <TaskCard
                         key={task._id}
                         task={task}
@@ -367,11 +390,11 @@ function AdminDashboard() {
 function SectionHeader({ title, subtitle }) {
   return (
     <div className="mb-4">
-      <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">
+      <h3 className="text-xl font-bold text-light-text dark:text-dark-text">
         {title}
       </h3>
 
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         {subtitle}
       </p>
     </div>
@@ -380,7 +403,7 @@ function SectionHeader({ title, subtitle }) {
 
 function EmptyBox({ text }) {
   return (
-    <div className="rounded-xl border border-light-border bg-light-card p-6 text-gray-500 dark:border-dark-border dark:bg-dark-card dark:text-gray-400">
+    <div className="rounded-2xl border border-dashed border-light-border bg-light-card/50 p-8 text-center text-xs font-bold text-gray-400 dark:border-dark-border dark:bg-dark-card/50">
       {text}
     </div>
   );
@@ -388,38 +411,45 @@ function EmptyBox({ text }) {
 
 function ClientCard({ client }) {
   return (
-    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm transition hover:shadow-md dark:border-dark-border dark:bg-dark-card">
+    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm transition hover:shadow-md dark:border-dark-border dark:bg-dark-card space-y-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h4 className="text-lg font-semibold text-light-text dark:text-dark-text">
-            {client.name}
-          </h4>
+        <div className="flex items-center gap-3">
+          <img
+            src={client.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=4f46e5&color=fff`}
+            alt={client.name}
+            className="h-12 w-12 rounded-full object-cover shadow-sm border border-indigo-500/20"
+          />
+          <div>
+            <h4 className="text-base font-bold text-light-text dark:text-dark-text">
+              {client.name}
+            </h4>
 
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {client.email}
-          </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {client.email}
+            </p>
 
-          <p className="mt-2 font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-300">
-            ID: {client.rollNumber || client._id}
-          </p>
+            <p className="mt-1 font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+              ID: {client.rollNumber || client._id?.slice(-8)}
+            </p>
+          </div>
         </div>
 
-        <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">
-          {client.role || "client"}
+        <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-300 capitalize">
+          {client.role === "client" ? "Engineer" : (client.role || "Engineer")}
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-light-border pt-4 text-sm dark:border-dark-border">
+      <div className="grid grid-cols-2 gap-3 border-t border-light-border/60 pt-4 text-xs dark:border-dark-border/60">
         <div>
-          <p className="text-gray-500 dark:text-gray-400">Phone</p>
-          <p className="mt-1 font-medium text-light-text dark:text-dark-text">
+          <p className="text-gray-400 uppercase text-[9px] font-bold tracking-wider">Phone</p>
+          <p className="mt-0.5 font-bold text-light-text dark:text-dark-text">
             {client.phone || "Not added"}
           </p>
         </div>
 
         <div>
-          <p className="text-gray-500 dark:text-gray-400">City</p>
-          <p className="mt-1 font-medium text-light-text dark:text-dark-text">
+          <p className="text-gray-400 uppercase text-[9px] font-bold tracking-wider">Location / City</p>
+          <p className="mt-0.5 font-bold text-light-text dark:text-dark-text">
             {client.city || "Not added"}
           </p>
         </div>
@@ -431,66 +461,105 @@ function ClientCard({ client }) {
 function TaskCard({ task, onView }) {
   const isCompleted = task.status === "completed";
 
+  const priorityColors = {
+    urgent: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
+    high: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+    medium: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
+    low: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  };
+
   return (
-    <div className="rounded-2xl border border-light-border bg-light-card p-5 shadow-sm dark:border-dark-border dark:bg-dark-card">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h4 className="truncate text-lg font-semibold text-light-text dark:text-dark-text">
+    <div className="rounded-3xl border border-light-border bg-light-card p-6 shadow-sm transition hover:shadow-lg dark:border-dark-border dark:bg-dark-card space-y-4 flex flex-col justify-between">
+      <div className="space-y-3">
+        
+        {/* Top Badges */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border tracking-wider ${priorityColors[task.priority || "medium"]}`}>
+              {task.priority || "medium"} priority
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 capitalize">
+              {task.taskCategory || "General"}
+            </span>
+          </div>
+
+          <StatusBadge status={task.status} />
+        </div>
+
+        {/* Task Title & Description */}
+        <div>
+          <h4 className="text-base font-black text-light-text dark:text-dark-text tracking-tight line-clamp-1">
             {task.title}
           </h4>
 
-          <p className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
-            {task.description || "No description added."}
+          <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            {task.description || "No specific instructions added for this assignment."}
           </p>
         </div>
 
-        <StatusBadge status={task.status} />
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
+      {/* Engineer & Review Information */}
+      <div className="grid grid-cols-2 gap-3 border-t border-light-border/60 dark:border-dark-border/60 pt-4 text-xs">
         <div>
-          <p className="text-gray-500 dark:text-gray-400">Assigned to</p>
-          <p className="mt-1 font-semibold text-light-text dark:text-dark-text">
-            {task.assignedTo?.name || "Unassigned"}
-          </p>
+          <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Assigned Engineer</p>
+          <div className="mt-1 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
+              {task.assignedTo?.name?.charAt(0) || "E"}
+            </div>
+            <p className="font-bold text-light-text dark:text-dark-text truncate">
+              {task.assignedTo?.name || "Unassigned"}
+            </p>
+          </div>
         </div>
 
         <div>
-          <p className="text-gray-500 dark:text-gray-400">Review</p>
-          <p className="mt-1 font-semibold capitalize text-light-text dark:text-dark-text">
-            {task.reviewStatus || "pending"}
-          </p>
+          <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Admin Rating / Review</p>
+          {task.adminRating ? (
+            <div className="mt-1 flex items-center gap-1 text-amber-400 text-xs font-extrabold">
+              <span>{"★".repeat(task.adminRating)}</span>
+              <span className="text-light-text dark:text-dark-text ml-1">({task.adminRating}/5)</span>
+            </div>
+          ) : (
+            <p className="mt-1 font-semibold capitalize text-light-text dark:text-dark-text">
+              {task.reviewStatus || "Pending Review"}
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-between border-t border-light-border pt-4 dark:border-dark-border">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+      {/* Footer Actions */}
+      <div className="flex items-center justify-between border-t border-light-border/60 dark:border-dark-border/60 pt-4">
+        <p className="text-[11px] font-medium text-gray-400">
           {isCompleted && task.submittedAt
-            ? `Submitted: ${new Date(task.submittedAt).toLocaleDateString()}`
+            ? `Completed: ${new Date(task.submittedAt).toLocaleDateString()}`
+            : task.deadline
+            ? `Deadline: ${new Date(task.deadline).toLocaleDateString()}`
             : `Created: ${new Date(task.createdAt).toLocaleDateString()}`}
         </p>
 
         <button
           onClick={() => onView(task)}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition shadow-md hover:shadow-indigo-500/20 active:scale-97 cursor-pointer"
         >
-          View
+          {isCompleted ? "Evaluate & Review" : "View Details"}
         </button>
       </div>
+
     </div>
   );
 }
 
 function StatusBadge({ status }) {
   const styles = {
-    pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-300",
-    "in-progress": "bg-blue-500/15 text-blue-600 dark:text-blue-300",
-    completed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
+    pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30",
+    "in-progress": "bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30",
+    completed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
   };
 
   return (
     <span
-      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+      className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
         styles[status] || "bg-gray-500/15 text-gray-600 dark:text-gray-300"
       }`}
     >

@@ -3,8 +3,11 @@ import ClientSidebar from "../components/engineer/ClientSidebar";
 import ClientNavbar from "../components/engineer/ClientNavbar";
 import AIAssistantSidebar from "../components/dashboard/AIAssistantSidebar";
 import { isAppOnline, getOfflineQueue, syncOfflineQueue } from "../utils/offlineSync";
+import { useLocationTracker } from "../hooks/useLocationTracker";
 
 function ClientLayout({ children }) {
+  useLocationTracker();
+
   const [open, setOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(isAppOnline());
   const [queueCount, setQueueCount] = useState(0);
@@ -52,14 +55,14 @@ function ClientLayout({ children }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-slate-955 text-white">
+    <div className="flex min-h-screen bg-background text-text-primary transition-colors duration-200">
 
       <ClientSidebar
         open={open}
         setOpen={setOpen}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 md:pl-64">
 
         <ClientNavbar setOpen={setOpen} />
 

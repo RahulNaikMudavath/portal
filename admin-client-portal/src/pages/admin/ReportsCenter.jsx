@@ -5,7 +5,7 @@ import { getProjects } from "../../services/projectService";
 import { getEngineers } from "../../services/userService";
 import { 
   FileText, Download, Printer, Filter, Calendar, 
-  User, Briefcase, Award, TrendingUp, DollarSign, CheckCircle2, Star 
+  User, Briefcase, Award, TrendingUp, DollarSign, CheckCircle2, Star, AlertTriangle 
 } from "lucide-react";
 
 // Format seconds into readable duration

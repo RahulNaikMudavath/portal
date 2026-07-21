@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { reviewTask } from "../services/taskService";
 
 function ReviewModal({ task, onClose, onReview }) {
-  const [reviewStatus, setReviewStatus] = useState("");
+  const [reviewStatus, setReviewStatus] = useState("approved");
+  const [rating, setRating] = useState(5);
+  const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const handleReview = async () => {
     if (!reviewStatus) return;
 
     setIsSubmitting(true);
     try {
-      await reviewTask(task._id, reviewStatus);
+      await reviewTask(task._id, reviewStatus, rating, reason);
       onReview(task._id, reviewStatus);
       onClose();
     } catch (error) {
@@ -26,11 +36,17 @@ function ReviewModal({ task, onClose, onReview }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-opacity cursor-pointer"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl cursor-default"
+      >
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Review Task</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Review Task Submission</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
@@ -50,26 +66,26 @@ function ReviewModal({ task, onClose, onReview }) {
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Assigned to:</span>
-              <p className="text-slate-900 dark:text-white">{task.assignedTo?.name || "Unassigned"}</p>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Assigned Engineer:</span>
+              <p className="text-slate-900 dark:text-white font-bold">{task.assignedTo?.name || "Unassigned"}</p>
             </div>
             <div>
               <span className="font-semibold text-slate-700 dark:text-slate-300">Status:</span>
               <p className="text-slate-900 dark:text-white capitalize">{task.status}</p>
             </div>
             <div>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Submitted:</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Submitted On:</span>
               <p className="text-slate-900 dark:text-white">{new Date(task.updatedAt).toLocaleDateString()}</p>
             </div>
             <div>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Review Status:</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Current Review Status:</span>
               <p className="text-slate-900 dark:text-white capitalize">{task.reviewStatus}</p>
             </div>
           </div>
 
           {task.submissionFiles && task.submissionFiles.length > 0 && (
             <div>
-              <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Submitted Files</h4>
+              <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Submitted Files & Proofs</h4>
               <div className="space-y-2">
                 {task.submissionFiles.map((file, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
@@ -93,48 +109,88 @@ function ReviewModal({ task, onClose, onReview }) {
             </div>
           )}
 
+          {/* Decision Buttons */}
           <div>
             <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Review Decision</h4>
-            <div className="space-y-3">
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setReviewStatus("approved")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                    reviewStatus === "approved"
-                      ? "bg-green-600 text-white"
-                      : "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800"
-                  }`}
-                >
-                  ✅ Approve
-                </button>
-                <button
-                  onClick={() => setReviewStatus("rejected")}
-                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                    reviewStatus === "rejected"
-                      ? "bg-red-600 text-white"
-                      : "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800"
-                  }`}
-                >
-                  ❌ Reject
-                </button>
-              </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setReviewStatus("approved")}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all cursor-pointer ${
+                  reviewStatus === "approved"
+                    ? "bg-emerald-600 text-white shadow-lg"
+                    : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300"
+                }`}
+              >
+                ✅ Approve Task
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewStatus("rejected")}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all cursor-pointer ${
+                  reviewStatus === "rejected"
+                    ? "bg-rose-600 text-white shadow-lg"
+                    : "bg-rose-100 text-rose-800 hover:bg-rose-200 dark:bg-rose-950 dark:text-rose-300"
+                }`}
+              >
+                ❌ Reject Task
+              </button>
             </div>
+          </div>
+
+          {/* Admin Star Rating Selector */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Admin Performance Rating</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Rate the engineer's work quality (1 to 5 stars). This will update their overall growth score & rank.
+            </p>
+            <div className="flex items-center gap-2 pt-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className={`text-3xl transition-transform hover:scale-125 cursor-pointer ${
+                    star <= rating ? "text-amber-400 drop-shadow" : "text-slate-300 dark:text-slate-600"
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+              <span className="ml-3 text-sm font-extrabold text-indigo-600 dark:text-indigo-400">
+                {rating} / 5 Stars
+              </span>
+            </div>
+          </div>
+
+          {/* Feedback Note */}
+          <div>
+            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-1">
+              Review Remarks / Feedback Notes
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={reviewStatus === "rejected" ? "Specify rejection reason..." : "Enter optional performance remarks..."}
+              rows={3}
+              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-sm text-slate-900 dark:text-white outline-none focus:border-indigo-500"
+            />
           </div>
         </div>
 
         <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium"
+            className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleReview}
             disabled={!reviewStatus || isSubmitting}
-            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
+            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors cursor-pointer shadow-lg"
           >
-            {isSubmitting ? "Submitting..." : "Submit Review"}
+            {isSubmitting ? "Submitting..." : "Submit Decision & Rating"}
           </button>
         </div>
       </div>

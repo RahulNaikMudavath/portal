@@ -16,8 +16,13 @@ const commentSchema = new mongoose.Schema(
 
     message: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+    },
+
+    audioUrl: {
+      type: String,
+      default: "",
     },
   },
   {

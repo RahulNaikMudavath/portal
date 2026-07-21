@@ -171,6 +171,18 @@ const taskSchema = new mongoose.Schema(
       default: "pending",
     },
 
+    adminRating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+
+    adminReviewFeedback: {
+      type: String,
+      default: "",
+    },
+
     activityLog: [
       {
         action: {

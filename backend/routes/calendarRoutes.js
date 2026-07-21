@@ -7,8 +7,14 @@ const {
   createEvent,
   updateEvent,
   deleteEvent,
-  checkConflicts
+  checkConflicts,
+  exportIcsFeed,
+  downloadSingleIcs
 } = require("../controllers/calendarController");
+
+// Public live .ics subscription feed for phone calendar sync (Apple Calendar, Google Calendar, Outlook)
+router.get("/feed/admin-calendar.ics", exportIcsFeed);
+router.get("/:id/export.ics", downloadSingleIcs);
 
 router.get("/", protect, getEvents);
 router.post("/", protect, createEvent);

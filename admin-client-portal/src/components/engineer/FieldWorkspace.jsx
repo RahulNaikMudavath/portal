@@ -272,6 +272,8 @@ export default function FieldWorkspace({
   onSubmitWork,
   onRefresh,
 }) {
+  const isLocked = !task?.startedAt || task?.status === "assigned" || task?.status === "accepted";
+
   return (
     <div className="space-y-6">
       {/* Task Header */}
@@ -286,32 +288,42 @@ export default function FieldWorkspace({
         onRefresh={onRefresh}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-7 space-y-6">
-          <NotesCard task={task} onRefresh={onRefresh} />
-          <VoiceNotesCard task={task} onRefresh={onRefresh} />
-          <MaterialsCard task={task} onRefresh={onRefresh} />
-          <PhotoGallery task={task} onRefresh={onRefresh} />
-          <AttachmentsCard task={task} />
+      {isLocked ? (
+        <div className="rounded-3xl border border-dashed border-indigo-500/20 bg-slate-900/40 p-12 text-center shadow-lg space-y-4 transition-colors">
+          <div className="text-5xl">🔒</div>
+          <h3 className="text-lg font-bold text-white">Workspace Locked</h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            You must activate this task by clicking the <strong className="text-indigo-400">"▶ Start Task"</strong> button above to unlock site navigation, check-in, checklists, files, and signatures.
+          </p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column */}
+          <div className="lg:col-span-7 space-y-6">
+            <NotesCard task={task} onRefresh={onRefresh} />
+            <VoiceNotesCard task={task} onRefresh={onRefresh} />
+            <MaterialsCard task={task} onRefresh={onRefresh} />
+            <PhotoGallery task={task} onRefresh={onRefresh} />
+            <AttachmentsCard task={task} />
+          </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-5 space-y-6">
-          <ProgressCard
-            task={task}
-            onUpdate={onProgressUpdate}
-          />
-          <TravelCard task={task} onRefresh={onRefresh} />
-          <QrCodeScannerCard task={task} onRefresh={onRefresh} />
-          <WeatherCard />
-          <CustomerCard task={task} />
-          <SiteCard task={task} />
-          <CustomerSignatureCard task={task} onRefresh={onRefresh} />
-          <TimelineCard task={task} />
-          <AIAnalysisCard task={task} />
+          {/* Right Column */}
+          <div className="lg:col-span-5 space-y-6">
+            <ProgressCard
+              task={task}
+              onUpdate={onProgressUpdate}
+            />
+            <TravelCard task={task} onRefresh={onRefresh} />
+            <QrCodeScannerCard task={task} onRefresh={onRefresh} />
+            <WeatherCard />
+            <CustomerCard task={task} />
+            <SiteCard task={task} />
+            <CustomerSignatureCard task={task} onRefresh={onRefresh} />
+            <TimelineCard task={task} />
+            <AIAnalysisCard task={task} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

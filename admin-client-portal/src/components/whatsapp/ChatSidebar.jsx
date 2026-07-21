@@ -2,45 +2,49 @@ import ChatCard from "./ChatCard";
 
 const ChatSidebar = ({ chats, selected, onSelect }) => {
   return (
-    <div className="h-full bg-[#111827] border-r border-slate-700 flex flex-col">
+    <div className="h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col rounded-2xl shadow-sm overflow-hidden">
 
       {/* Header */}
-      <div className="p-5 border-b border-slate-700">
+      <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
 
-        <h2 className="text-2xl font-bold text-white">
-          WhatsApp
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span>💬</span> WhatsApp Conversations
         </h2>
 
-        <p className="text-sm text-slate-400 mt-1">
-          Customer Conversations
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+          Active Customer Inquiries
         </p>
 
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b border-slate-700">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800">
 
         <input
           type="text"
           placeholder="Search customer..."
-          className="w-full rounded-lg bg-slate-800 px-4 py-2 text-white placeholder:text-slate-500 outline-none border border-slate-700 focus:border-green-500"
+          className="w-full rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200 dark:border-slate-700 focus:border-emerald-500 transition"
         />
 
       </div>
 
       {/* Chats */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
 
-        {chats.map((chat) => (
-
-          <ChatCard
-            key={chat._id}
-            chat={chat}
-            selected={selected}
-            onSelect={onSelect}
-          />
-
-        ))}
+        {chats.length === 0 ? (
+          <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-sm">
+            No active conversations
+          </div>
+        ) : (
+          chats.map((chat) => (
+            <ChatCard
+              key={chat._id}
+              chat={chat}
+              selected={selected}
+              onSelect={onSelect}
+            />
+          ))
+        )}
 
       </div>
 

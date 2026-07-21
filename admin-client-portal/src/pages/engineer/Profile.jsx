@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import ClientLayout from "../../layouts/ClientLayout";
 import API from "../../services/api";
 import { Camera, User, Badge, ShieldAlert, Award, Calendar, CheckCircle } from "lucide-react";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -143,9 +145,15 @@ export default function Profile() {
       }
 
       // Sync localstorage session user details
-      const savedUser = JSON.parse(localStorage.getItem("user"));
-      if (savedUser) {
-        localStorage.setItem("user", JSON.stringify({ ...savedUser, ...u }));
+      const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const merged = savedUser ? { ...savedUser, ...u } : u;
+      localStorage.setItem("user", JSON.stringify(merged));
+
+      // Notify other parts of the app that user profile changed
+      try {
+        window.dispatchEvent(new CustomEvent("user-updated", { detail: merged }));
+      } catch (err) {
+        // ignore (some browsers restrict CustomEvent in certain contexts)
       }
 
       setMessage("Profile updated successfully!");
@@ -170,9 +178,21 @@ export default function Profile() {
   return (
     <ClientLayout>
       <div className="max-w-4xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white">My Profile</h1>
-          <p className="text-slate-400 mt-1">Configure your site skills, details, and work availability status.</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold text-white">My Profile</h1>
+            <p className="text-slate-400 mt-1">Configure your site skills, details, and work availability status.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.clear();
+              navigate("/");
+            }}
+            className="px-4 py-2 bg-danger text-white hover:bg-danger/90 font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer self-start sm:self-auto shadow-xs"
+          >
+            Logout
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

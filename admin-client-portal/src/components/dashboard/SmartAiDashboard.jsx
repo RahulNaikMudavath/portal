@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getAiAnalytics } from "../../services/analyticsService";
 import { Sparkles, ArrowRight, UserCheck, AlertTriangle, FileCheck, Landmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getGreeting } from "../../utils/timeUtils";
 
 export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
   const [data, setData] = useState(null);
@@ -36,10 +37,11 @@ export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
     );
   }
 
-  // Extract admin name
+  // Extract admin name and compute dynamic greeting
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const rawName = user.name || "Rahul";
+  const rawName = user.name || "Admin";
   const firstName = rawName.split(" ")[0];
+  const greeting = getGreeting();
 
   // 1. Dynamic Active Engineers Count (checked-in on-site)
   const engineersOnSite = new Set(
@@ -49,10 +51,10 @@ export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
         const assigned = t.assignedTo;
         return typeof assigned === "object" ? (assigned._id || assigned.id) : assigned;
       })
-  ).size || data?.engineerWorkload?.filter(e => e.activeTasksCount > 0).length || 3;
+  ).size;
 
   // 2. Dynamic Delayed Projects Count
-  const delayedProjectsCount = data?.projectDelayPrediction?.filter(p => p.delayProbability > 40).length || 2;
+  const delayedProjectsCount = data?.projectDelayPrediction?.filter(p => p.delayProbability > 40).length || 0;
   
   // 3. Dynamic Tasks Awaiting Approval
   const pendingApprovals = tasks.filter(t => t.status === "completed" && t.reviewStatus === "pending");
@@ -76,15 +78,18 @@ export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
 
     if (completedLastMonth > 0) {
       const diff = completedThisMonth - completedLastMonth;
-      return Math.round((diff / completedLastMonth) * 100);
+      return { hasData: true, pct: Math.round((diff / completedLastMonth) * 100) };
     }
-    return 18; // Default fallback to 18% as per spec if database is newly initialized
+    if (completedThisMonth > 0) {
+      return { hasData: true, pct: 100 };
+    }
+    return { hasData: false, pct: 0 };
   };
 
-  const revPct = calculateRevenue();
-  const revenueText = revPct >= 0 
-    ? `Revenue this month increased by ${revPct}%.` 
-    : `Revenue this month decreased by ${Math.abs(revPct)}%.`;
+  const revInfo = calculateRevenue();
+  const revenueText = revInfo.hasData 
+    ? (revInfo.pct >= 0 ? `Revenue this month increased by ${revInfo.pct}%.` : `Revenue this month decreased by ${Math.abs(revInfo.pct)}%.`)
+    : "No completed task revenue recorded this month.";
 
   // Determine recommendation target
   const recommendedTask = pendingApprovals[0];
@@ -98,15 +103,21 @@ export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
 
       {/* Main AI Insights Speech Block */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-indigo-500/10 border border-indigo-500/30 p-2 text-indigo-400">
-            <Sparkles className="h-5 w-5 animate-pulse" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-indigo-400 animate-pulse" />
+            <h2 className="text-sm font-extrabold uppercase tracking-widest text-indigo-400">Smart AI Assistant</h2>
           </div>
-          <span className="text-xs uppercase font-extrabold tracking-wider text-indigo-400">ConstructAI Insights</span>
+          <button
+            onClick={() => navigate("/admin/calendar")}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-bold transition cursor-pointer self-start sm:self-auto"
+          >
+            <span>📅 Phone Calendar Sync</span>
+          </button>
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-black text-light-text dark:text-dark-text tracking-tight">
-          Good Morning, {firstName}
+          {greeting}, {firstName}
         </h1>
       </div>
 
@@ -155,7 +166,7 @@ export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
         {recommendedTask ? (
           <button
             onClick={() => onApproveTask && onApproveTask(recommendedTask)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-indigo-950/20 group shrink-0 active:scale-97"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-indigo-950/20 group shrink-0 active:scale-97 cursor-pointer"
           >
             <span>Approve Now</span>
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -163,7 +174,7 @@ export default function SmartAiDashboard({ tasks = [], onApproveTask }) {
         ) : (
           <button
             onClick={() => navigate("/admin/tasks")}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg group shrink-0 active:scale-97"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg group shrink-0 active:scale-97 cursor-pointer"
           >
             <span>Manage Tasks</span>
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />

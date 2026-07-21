@@ -39,7 +39,21 @@ exports.getProjects = async (req, res) => {
   try {
     let projects;
     if (req.user.role === "admin") {
-      projects = await Project.find()
+      const org = req.user.organization || req.user.company || "";
+      let query = { createdBy: req.user.id };
+      if (org) {
+        const User = require("../models/User");
+        const adminsInOrg = await User.find({
+          $or: [
+            { organization: org },
+            { company: org }
+          ]
+        }).distinct("_id");
+        if (adminsInOrg.length > 0) {
+          query = { createdBy: { $in: adminsInOrg } };
+        }
+      }
+      projects = await Project.find(query)
         .populate("engineers", "name email")
         .sort({ createdAt: -1 });
     } else {
@@ -71,8 +85,23 @@ exports.getProjectById = async (req, res) => {
     }
 
     // Authorization
-    if (req.user.role !== "admin" && !project.engineers.some(e => e._id.toString() === req.user.id)) {
-      return res.status(403).json({ message: "Not authorized to view this project" });
+    if (req.user.role === "admin") {
+      const org = req.user.organization || req.user.company || "";
+      if (org) {
+        const adminsInOrg = await User.find({
+          $or: [
+            { organization: org },
+            { company: org }
+          ]
+        }).distinct("_id");
+        if (project.createdBy && !adminsInOrg.map(id => id.toString()).includes(project.createdBy.toString())) {
+          return res.status(403).json({ message: "Not authorized to view this project" });
+        }
+      }
+    } else {
+      if (!project.engineers.some(e => e._id.toString() === req.user.id)) {
+        return res.status(403).json({ message: "Not authorized to view this project" });
+      }
     }
 
     res.json(project);

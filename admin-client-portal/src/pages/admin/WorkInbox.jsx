@@ -36,7 +36,7 @@ useEffect(() => {
 if (loading) {
   return (
     <AdminLayout>
-      <h1 className="text-3xl text-white">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
         Loading Work Requests...
       </h1>
     </AdminLayout>
@@ -45,13 +45,13 @@ if (loading) {
 
   return (
     <AdminLayout>
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
           📥 Work Inbox
         </h1>
 
-        <p className="mt-2 text-slate-400">
-          All incoming customer work requests appear here before assignment.
+        <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">
+          All incoming customer work requests appear here before engineer assignment.
         </p>
       </div>
 
@@ -62,12 +62,12 @@ if (loading) {
         <div className="space-y-4">
 
           {requests.length === 0 ? (
-            <div className="rounded-xl border border-slate-700 bg-slate-900 p-10 text-center">
-              <h2 className="text-xl text-white">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 No Work Requests Yet
               </h2>
 
-              <p className="mt-3 text-slate-400">
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                 WhatsApp requests will appear here automatically.
               </p>
             </div>

@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from "react";
-import { uploadTaskAttachment } from "../../services/taskService";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { uploadTaskAttachment, deleteTaskAttachment } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
 import { isAppOnline, queueOfflineAction } from "../../utils/offlineSync";
 
@@ -16,6 +16,31 @@ export default function PhotoGallery({ task, onRefresh }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setSelectedMedia(null);
+    };
+    if (selectedMedia) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedMedia]);
+
+  const handleDeleteMedia = async (e, media) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete media "${media.title}"?`)) return;
+
+    try {
+      const rawUrl = media.url || "";
+      const fileUrl = rawUrl.replace(/^http:\/\/[^/]+\//, "");
+      await deleteTaskAttachment(task._id, fileUrl);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete media attachment.");
+    }
+  };
 
   // Generate realistic engineering media (photos & videos) based on task title and submission status
   const mediaByStage = useMemo(() => {
@@ -228,9 +253,21 @@ export default function PhotoGallery({ task, onRefresh }) {
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-955 via-slate-955/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 flex flex-col justify-end">
-                <p className="text-[10px] font-bold text-white truncate">{media.title}</p>
-                <p className="text-[8px] text-slate-405 font-mono mt-0.5">{media.date}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-955 via-slate-955/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 flex flex-col justify-between">
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    title="Delete Media Attachment"
+                    onClick={(e) => handleDeleteMedia(e, media)}
+                    className="p-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-700 text-white text-[11px] shadow-md transition cursor-pointer"
+                  >
+                    🗑️
+                  </button>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-white truncate">{media.title}</p>
+                  <p className="text-[8px] text-slate-405 font-mono mt-0.5">{media.date}</p>
+                </div>
               </div>
             </motion.div>
           ))}

@@ -27,9 +27,23 @@ const getEvents = async (req, res) => {
   try {
     let events;
 
-    // Admins see all events, client/engineers see only their scheduled events
+    // Admins see all events in organization, client/engineers see only their scheduled events
     if (req.user.role === "admin") {
-      events = await CalendarEvent.find()
+      const org = req.user.organization || req.user.company || "";
+      let query = { createdBy: req.user.id };
+      if (org) {
+        const User = require("../models/User");
+        const adminsInOrg = await User.find({
+          $or: [
+            { organization: org },
+            { company: org }
+          ]
+        }).distinct("_id");
+        if (adminsInOrg.length > 0) {
+          query = { createdBy: { $in: adminsInOrg } };
+        }
+      }
+      events = await CalendarEvent.find(query)
         .populate("engineers", "_id name email rollNumber")
         .populate("project", "_id name customerName location")
         .populate("task", "_id title status")
@@ -92,6 +106,23 @@ const createEvent = async (req, res) => {
     }
 
     await event.save();
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("calendarUpdate", { eventId: event._id });
+      (event.engineers || []).forEach(async (engId) => {
+        try {
+          const Notification = require("../models/Notification");
+          const notif = await Notification.create({
+            userId: engId,
+            type: "calendar_updated",
+            message: `📅 Admin assigned new schedule: "${event.title}"`,
+            actionBy: req.user.id
+          });
+          io.emit("newNotification", notif);
+        } catch (e) {}
+      });
+    }
 
     const populatedEvent = await CalendarEvent.findById(event._id)
       .populate("engineers", "_id name email rollNumber")
@@ -160,6 +191,23 @@ const updateEvent = async (req, res) => {
 
     await event.save();
 
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("calendarUpdate", { eventId: event._id });
+      (event.engineers || []).forEach(async (engId) => {
+        try {
+          const Notification = require("../models/Notification");
+          const notif = await Notification.create({
+            userId: engId,
+            type: "calendar_updated",
+            message: `📅 Admin updated schedule: "${event.title}"`,
+            actionBy: req.user.id
+          });
+          io.emit("newNotification", notif);
+        } catch (e) {}
+      });
+    }
+
     const populatedEvent = await CalendarEvent.findById(event._id)
       .populate("engineers", "_id name email rollNumber")
       .populate("project", "_id name customerName")
@@ -225,10 +273,88 @@ const checkConflicts = async (req, res) => {
   }
 };
 
+// 📅 Export iCalendar .ics Feed for Phone / Google / Apple Calendar Sync
+const formatDateToIcs = (date) => {
+  const d = new Date(date);
+  return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+};
+
+const generateIcsContent = (events) => {
+  let ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//AdminClientPortal//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:Admin Portal Tasks & Events",
+    "X-WR-TIMEZONE:UTC"
+  ];
+
+  events.forEach((ev) => {
+    const start = formatDateToIcs(ev.start);
+    const end = formatDateToIcs(ev.end || new Date(new Date(ev.start).getTime() + 3600000));
+    const title = (ev.title || "Portal Activity").replace(/,/g, "\\,");
+    const desc = (ev.description || "Activity logged in Admin Portal").replace(/\n/g, "\\n").replace(/,/g, "\\,");
+    const loc = (ev.location || "Portal Workspace").replace(/\n/g, "\\n").replace(/,/g, "\\,");
+
+    ics.push(
+      "BEGIN:VEVENT",
+      `UID:${ev._id}@adminportal.com`,
+      `DTSTAMP:${formatDateToIcs(new Date())}`,
+      `DTSTART:${start}`,
+      `DTEND:${end}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${desc}`,
+      `LOCATION:${loc}`,
+      "STATUS:CONFIRMED",
+      "BEGIN:VALARM",
+      "TRIGGER:-PT15M",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:Phone Reminder: ${title}`,
+      "END:VALARM",
+      "END:VEVENT"
+    );
+  });
+
+  ics.push("END:VCALENDAR");
+  return ics.join("\r\n");
+};
+
+const exportIcsFeed = async (req, res) => {
+  try {
+    const events = await CalendarEvent.find().sort({ start: 1 }).lean();
+    const icsContent = generateIcsContent(events);
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", 'inline; filename="admin-portal-calendar.ics"');
+    res.status(200).send(icsContent);
+  } catch (error) {
+    console.error("ICS Feed Export error:", error);
+    res.status(500).send("Error generating ICS feed");
+  }
+};
+
+const downloadSingleIcs = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await CalendarEvent.findById(id).lean();
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    const icsContent = generateIcsContent([event]);
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="event-${id}.ics"`);
+    res.status(200).send(icsContent);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to generate event ICS file" });
+  }
+};
+
 module.exports = {
   getEvents,
   createEvent,
   updateEvent,
   deleteEvent,
-  checkConflicts
+  checkConflicts,
+  exportIcsFeed,
+  downloadSingleIcs
 };

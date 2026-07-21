@@ -60,9 +60,21 @@ const getStatusStyle = (status) => {
   }
 };
 
+const getNormalizedStatus = (dbStatus) => {
+  if (!dbStatus || dbStatus === "assigned" || dbStatus === "pending" || dbStatus === "accepted") {
+    return "pending";
+  }
+  if (dbStatus === "working" || dbStatus === "in-progress") {
+    return "in-progress";
+  }
+  return "completed";
+};
+
 export default function TaskHeader({ task }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  const status = getNormalizedStatus(task?.status);
 
   // Updates deadline countdown automatically
   useEffect(() => {
@@ -76,7 +88,7 @@ export default function TaskHeader({ task }) {
 
   // Updates persistent work timer while task is in-progress
   useEffect(() => {
-    if (!task?.startedAt || task?.status !== "in-progress") {
+    if (!task?.startedAt || status !== "in-progress") {
       return;
     }
 
@@ -91,10 +103,9 @@ export default function TaskHeader({ task }) {
     const timerInterval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(timerInterval);
-  }, [task?.startedAt, task?.status]);
+  }, [task?.startedAt, status]);
 
   const priority = task?.priority || "medium";
-  const status = task?.status || "pending";
   const deadlineInfo = getDeadlineInfo(task?.deadline, currentTime);
   const createdDate = task?.createdAt ? new Date(task.createdAt).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A";
   const deadlineDate = task?.deadline ? new Date(task.deadline).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A";

@@ -73,10 +73,18 @@ function WhatsAppInbox() {
     return (
 
         <AdminLayout>
+            <div className="mb-4">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                    📥 Work Inbox & WhatsApp Control Center
+                </h1>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5">
+                    Real-time customer conversations & AI-powered work request extraction.
+                </p>
+            </div>
 
-            <div className="grid grid-cols-12 h-[85vh] gap-4">
+            <div className="grid grid-cols-12 h-[calc(85vh-3.5rem)] gap-4">
 
-                <div className="col-span-3">
+                <div className="col-span-3 h-full">
 
                     <ChatSidebar
                         chats={chats}
@@ -86,7 +94,7 @@ function WhatsAppInbox() {
 
                 </div>
 
-                <div className="col-span-6">
+                <div className="col-span-6 h-full">
 
                     <ChatWindow
                         chat={selectedChat}
@@ -94,7 +102,7 @@ function WhatsAppInbox() {
 
                 </div>
 
-                <div className="col-span-3">
+                <div className="col-span-3 h-full">
 
                     <AISummaryPanel
                         chat={selectedChat}

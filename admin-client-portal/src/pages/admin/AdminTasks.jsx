@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import { getTasks, reviewTask } from "../../services/taskService";
 
@@ -219,6 +220,11 @@ function ReviewActionsCard({ task, onReviewSubmitted }) {
 function AdminTasks() {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
+  const selectedTaskRef = useRef(selectedTask);
+
+  useEffect(() => {
+    selectedTaskRef.current = selectedTask;
+  }, [selectedTask]);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -234,8 +240,8 @@ function AdminTasks() {
       );
       setTasks(sorted);
 
-      if (updateSelected && selectedTask) {
-        const fresh = sorted.find((t) => t._id === selectedTask._id);
+      if (updateSelected && selectedTaskRef.current) {
+        const fresh = sorted.find((t) => t._id === selectedTaskRef.current._id);
         if (fresh) setSelectedTask(fresh);
       }
     } catch (err) {
@@ -255,7 +261,7 @@ function AdminTasks() {
       clearInterval(interval);
       socket.off("taskDashboardUpdate");
     };
-  }, [selectedTask?._id]);
+  }, []);
 
   const filteredTasks = useMemo(() => {
     const normSearch = searchTerm.trim().toLowerCase();
@@ -299,7 +305,22 @@ function AdminTasks() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {tasks.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-16 text-center max-w-2xl mx-auto mt-12 shadow-lg">
+          <span className="text-6xl block mb-6">📋</span>
+          <h3 className="text-xl font-bold text-white">No Tasks Assigned</h3>
+          <p className="text-sm text-slate-400 mt-2 max-w-sm mx-auto">
+            You don't have any tasks in your isolated company workspace. Assign your first task to an engineer to begin.
+          </p>
+          <Link
+            to="/admin/create"
+            className="mt-6 inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-xl transition shadow-md"
+          >
+            ➕ Assign Your First Task
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side List (col-span-4) */}
         <div className="lg:col-span-4 space-y-4">
           {/* Search & Filters */}
@@ -455,6 +476,7 @@ function AdminTasks() {
           )}
         </div>
       </div>
+      )}
     </AdminLayout>
   );
 }

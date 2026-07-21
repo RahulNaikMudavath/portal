@@ -6,8 +6,9 @@ export const getTaskComments = (taskId) => {
 };
 
 // Add a comment to one task
-export const addTaskComment = (taskId, message) => {
+export const addTaskComment = (taskId, message, audioUrl = "") => {
   return API.post(`/api/comments/task/${taskId}`, {
     message,
+    audioUrl,
   });
 };

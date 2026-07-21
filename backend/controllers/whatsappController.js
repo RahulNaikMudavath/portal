@@ -120,3 +120,64 @@ exports.getConversations = async (req, res) => {
 
   }
 };
+
+// 🌐 Meta WhatsApp Cloud API Verification (GET /api/whatsapp/webhook)
+exports.metaVerifyWebhook = (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "admin_portal_whatsapp_token";
+
+  if (mode && token) {
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+      console.log("[MetaWhatsApp] Webhook verified successfully!");
+      return res.status(200).send(challenge);
+    } else {
+      return res.sendStatus(403);
+    }
+  }
+  res.sendStatus(400);
+};
+
+// 📩 Meta WhatsApp Cloud API Incoming Message Webhook (POST /api/whatsapp/webhook)
+exports.metaReceiveWebhook = async (req, res) => {
+  try {
+    const io = req.app.get("io");
+    const body = req.body;
+
+    if (body.object === "whatsapp_business_account") {
+      for (const entry of body.entry || []) {
+        for (const change of entry.changes || []) {
+          const value = change.value;
+          if (value && value.messages && value.messages[0]) {
+            const msg = value.messages[0];
+            const from = msg.from;
+            const name = value.contacts && value.contacts[0] ? value.contacts[0].profile.name : `Customer (${from.slice(-4)})`;
+            const text = msg.text ? msg.text.body : "[Media / Attachment]";
+
+            const createdMessage = await WhatsappMessage.create({
+              conversationId: `conv_${from}`,
+              phoneNumber: from,
+              customerName: name,
+              direction: "incoming",
+              messageType: msg.type || "text",
+              text: text
+            });
+
+            if (io) {
+              console.log("🔥 Emitting Socket Event for Real Meta WhatsApp Message");
+              io.emit("newMessage", createdMessage);
+            }
+          }
+        }
+      }
+      return res.status(200).send("EVENT_RECEIVED");
+    } else {
+      return res.sendStatus(404);
+    }
+  } catch (err) {
+    console.error("Meta Webhook error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};

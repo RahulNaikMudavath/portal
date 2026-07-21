@@ -35,8 +35,8 @@ export const submitTask = (id, data) =>
   });
 
 // review task (admin)
-export const reviewTask = (id, status, reason = "") =>
-  API.put(`/api/tasks/${id}/review`, { status, reason });
+export const reviewTask = (id, status, adminRating = 5, reason = "") =>
+  API.put(`/api/tasks/${id}/review`, { status, adminRating, reason });
 
 export const getRecentActivities = () =>
   API.get("/api/tasks/activities/recent");
@@ -72,6 +72,10 @@ export const editTaskNote = (id, noteId, text) =>
 // delete note (client)
 export const deleteTaskNote = (id, noteId) =>
   API.delete(`/api/tasks/${id}/notes/${noteId}`);
+
+// delete attachment media (client/admin)
+export const deleteTaskAttachment = (id, fileUrl) =>
+  API.post(`/api/tasks/${id}/delete-attachment`, { fileUrl });
 
 // submit customer sign-off (client)
 export const submitCustomerSignOff = (id, signOffData) =>

@@ -20,31 +20,33 @@ const links = [
 
   return (
     <aside
-      className={`fixed md:static z-50 top-0 left-0 h-full w-64 bg-light-card dark:bg-dark-card text-light-text dark:text-dark-text border-r border-light-border dark:border-dark-border transform ${
+      className={`fixed z-50 top-0 left-0 h-screen w-64 shrink-0 bg-slate-900 border-r border-slate-800 text-text-primary transform ${
         open ? "translate-x-0" : "-translate-x-full"
       } md:translate-x-0 transition-transform duration-300`}
     >
-      <div className="p-5 border-b border-light-border dark:border-dark-border">
-        <h1 className="text-2xl font-bold">🚀 Admin Portal</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <div className="p-5 border-b border-border">
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <span>🚀</span> Admin Portal
+        </h1>
+        <p className="text-xs text-text-muted mt-1">
           Workspace dashboard
         </p>
       </div>
 
-      <nav className="flex flex-col gap-2 p-4">
+      <nav className="flex flex-col gap-1 p-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
         {links.map((link) => (
           <Link
             key={link.path}
             to={link.path}
             onClick={() => setOpen(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
               isActive(link.path)
-                ? "bg-blue-600 text-white"
-                : "text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-light-text dark:hover:text-white"
+                ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-bold shadow-xs"
+                : "text-text-secondary hover:bg-card-hover hover:text-text-primary"
             }`}
           >
-            <span>{link.icon}</span>
-            <span className="font-medium">{link.label}</span>
+            <span className="text-base">{link.icon}</span>
+            <span className="font-semibold text-small">{link.label}</span>
           </Link>
         ))}
       </nav>

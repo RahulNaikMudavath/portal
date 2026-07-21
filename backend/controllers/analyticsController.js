@@ -3,7 +3,21 @@ const User = require("../models/User");
 
 const getAdminAnalytics = async (req, res) => {
   try {
-    const tasks = await Task.find()
+    const org = req.user.organization || req.user.company || "";
+    let taskQuery = { createdBy: req.user.id };
+    if (org) {
+      const adminsInOrg = await User.find({
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      }).distinct("_id");
+      if (adminsInOrg.length > 0) {
+        taskQuery = { createdBy: { $in: adminsInOrg } };
+      }
+    }
+
+    const tasks = await Task.find(taskQuery)
       .populate("assignedTo", "name email")
       .lean();
 
@@ -133,9 +147,34 @@ const getAdminAnalytics = async (req, res) => {
 const getEngineerPerformanceAnalytics = async (req, res) => {
   try {
     const Project = require("../models/Project");
-    const engineers = await User.find({ role: "client" }).select("_id name email rollNumber phone city photo skills department workMode experience availability").lean();
-    const tasks = await Task.find().populate("assignedTo", "_id name email").lean();
-    const projects = await Project.find().lean();
+    const org = req.user.organization || req.user.company || "";
+
+    const engineerQuery = { role: { $in: ["client", "engineer"] }, createdBy: req.user.id };
+    let taskQuery = { createdBy: req.user.id };
+    let projectQuery = { createdBy: req.user.id };
+
+    if (org) {
+      const adminsInOrg = await User.find({
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      }).distinct("_id");
+      if (adminsInOrg.length > 0) {
+        engineerQuery.$or = [
+          { organization: org },
+          { company: org },
+          { createdBy: req.user.id }
+        ];
+        delete engineerQuery.createdBy;
+        taskQuery = { createdBy: { $in: adminsInOrg } };
+        projectQuery = { createdBy: { $in: adminsInOrg } };
+      }
+    }
+
+    const engineers = await User.find(engineerQuery).select("_id name email rollNumber phone city photo skills department workMode experience availability").lean();
+    const tasks = await Task.find(taskQuery).populate("assignedTo", "_id name email").lean();
+    const projects = await Project.find(projectQuery).lean();
     const now = new Date();
 
     // Setup monthly labels (last 6 months)
@@ -200,10 +239,21 @@ const getEngineerPerformanceAnalytics = async (req, res) => {
         return now > dl;
       }).length;
 
-      // Ratings
-      const ratedTasks = engTasks.filter(t => typeof t.customerSignRating === "number" && t.customerSignRating > 0);
-      const avgRating = ratedTasks.length > 0
-        ? Number((ratedTasks.reduce((sum, t) => sum + t.customerSignRating, 0) / ratedTasks.length).toFixed(1))
+      // Ratings (Admin Ratings + Customer Ratings combined)
+      const adminRatedTasks = engTasks.filter(t => typeof t.adminRating === "number" && t.adminRating > 0);
+      const custRatedTasks = engTasks.filter(t => typeof t.customerSignRating === "number" && t.customerSignRating > 0);
+
+      const totalRatingSum = 
+        adminRatedTasks.reduce((sum, t) => sum + t.adminRating, 0) +
+        custRatedTasks.reduce((sum, t) => sum + t.customerSignRating, 0);
+      const totalRatingCount = adminRatedTasks.length + custRatedTasks.length;
+
+      const avgRating = totalRatingCount > 0
+        ? Number((totalRatingSum / totalRatingCount).toFixed(1))
+        : (tasksCompleted > 0 ? 4.5 : 0);
+
+      const adminAvgRating = adminRatedTasks.length > 0
+        ? Number((adminRatedTasks.reduce((sum, t) => sum + t.adminRating, 0) / adminRatedTasks.length).toFixed(1))
         : 0;
 
       // Monthly Performance Breakdown for this Engineer
@@ -217,9 +267,9 @@ const getEngineerPerformanceAnalytics = async (req, res) => {
         });
 
         const comp = monthTasks.filter(t => t.status === "completed").length;
-        const mRated = monthTasks.filter(t => typeof t.customerSignRating === "number" && t.customerSignRating > 0);
+        const mRated = monthTasks.filter(t => (typeof t.adminRating === "number" && t.adminRating > 0) || (typeof t.customerSignRating === "number" && t.customerSignRating > 0));
         const rating = mRated.length > 0
-          ? Number((mRated.reduce((sum, t) => sum + t.customerSignRating, 0) / mRated.length).toFixed(1))
+          ? Number((mRated.reduce((sum, t) => sum + (t.adminRating || t.customerSignRating || 0), 0) / mRated.length).toFixed(1))
           : 0;
 
         return {
@@ -232,10 +282,20 @@ const getEngineerPerformanceAnalytics = async (req, res) => {
       // Aggregate Performance Score (Out of 100)
       // Weighted: Completed Rate (30%), Avg Rating (40%), Approval Rate (30%)
       const completedRate = tasksAssigned > 0 ? (tasksCompleted / tasksAssigned) * 100 : 0;
-      const ratingFactor = avgRating > 0 ? (avgRating / 5) * 100 : 0;
+      const ratingFactor = avgRating > 0 ? (avgRating / 5) * 100 : 80;
       const performanceScore = Math.round(
         (completedRate * 0.3) + (ratingFactor * 0.4) + (approvalRate * 0.3)
       );
+
+      // Growth Tier Level
+      let growthTier = "🌱 Trainee (Needs Guidance)";
+      if (performanceScore >= 90) {
+        growthTier = "🌟 Elite Top Performer";
+      } else if (performanceScore >= 75) {
+        growthTier = "🚀 High Growth Specialist";
+      } else if (performanceScore >= 50) {
+        growthTier = "📈 Steady Performer";
+      }
 
       const engProjects = projects.filter(p => (p.engineers || []).some(e => e.toString() === engId));
       const currentProjects = engProjects.filter(p => p.status !== "completed").map(p => p.name);
@@ -254,6 +314,7 @@ const getEngineerPerformanceAnalytics = async (req, res) => {
         workMode: eng.workMode || "field",
         experience: eng.experience || 0,
         availability: eng.availability || "available",
+        currentLocation: eng.currentLocation || null,
         currentProjects,
         completedProjects,
         tasksAssigned,
@@ -265,7 +326,10 @@ const getEngineerPerformanceAnalytics = async (req, res) => {
         fieldTasks,
         delayedTasks,
         avgRating,
+        adminAvgRating,
+        adminRatingsCount: adminRatedTasks.length,
         performanceScore,
+        growthTier,
         monthlyPerformance
       };
     });
@@ -407,10 +471,33 @@ const getAiAnalytics = async (req, res) => {
     const Project = require("../models/Project");
     const Task = require("../models/Task");
     const User = require("../models/User");
+    const org = req.user.organization || req.user.company || "";
 
-    const projects = await Project.find().populate("tasks").lean();
-    const tasks = await Task.find().lean();
-    const engineers = await User.find({ role: "client" }).select("_id name email").lean();
+    const engineerQuery = { role: "client", createdBy: req.user.id };
+    let taskQuery = { createdBy: req.user.id };
+    let projectQuery = { createdBy: req.user.id };
+
+    if (org) {
+      const adminsInOrg = await User.find({
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      }).distinct("_id");
+      if (adminsInOrg.length > 0) {
+        engineerQuery.$or = [
+          { organization: org },
+          { company: org }
+        ];
+        delete engineerQuery.createdBy;
+        taskQuery = { createdBy: { $in: adminsInOrg } };
+        projectQuery = { createdBy: { $in: adminsInOrg } };
+      }
+    }
+
+    const projects = await Project.find(projectQuery).populate("tasks").lean();
+    const tasks = await Task.find(taskQuery).lean();
+    const engineers = await User.find(engineerQuery).select("_id name email").lean();
 
     const now = new Date();
 
@@ -430,10 +517,13 @@ const getAiAnalytics = async (req, res) => {
 
     // Revenue Forecast (Dynamic projection of remaining budget based on progress)
     const revenueForecast = months.map((m, idx) => {
-      const baseVal = totalActiveBudget > 0 ? totalActiveBudget / 6 : 150000;
+      if (totalActiveBudget === 0) {
+        return { month: m.label, value: 0 };
+      }
+      const baseVal = totalActiveBudget / 6;
       const noise = (Math.sin(idx) * 0.1) * baseVal;
       const value = Math.round((baseVal + noise) / 1000) * 1000;
-      return { month: m.label, value: Math.max(value, 20000) };
+      return { month: m.label, value: Math.max(value, 0) };
     });
 
     // 3. Project Health & Delay Predictions

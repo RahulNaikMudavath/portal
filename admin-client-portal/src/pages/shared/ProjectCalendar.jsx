@@ -3,13 +3,14 @@ import AdminLayout from "../../layouts/AdminLayout";
 import ClientLayout from "../../layouts/ClientLayout";
 import { 
   getCalendarEvents, createCalendarEvent, updateCalendarEvent, 
-  deleteCalendarEvent, checkCalendarConflicts 
+  deleteCalendarEvent, checkCalendarConflicts, getIcsFeedUrl,
+  getWebcalFeedUrl, getGoogleCalendarUrl 
 } from "../../services/calendarService";
 import { getProjects } from "../../services/projectService";
 import { getEngineers } from "../../services/userService";
 import { 
   Calendar as CalendarIcon, Clock, MapPin, User, ChevronLeft, 
-  ChevronRight, Plus, Filter, AlertTriangle, X, Check, CheckCircle2 
+  ChevronRight, Plus, Filter, AlertTriangle, X, Check, CheckCircle2, Smartphone, Bell, Download, Copy 
 } from "lucide-react";
 
 // Event type configs for colors/labels
@@ -40,6 +41,44 @@ export default function ProjectCalendar() {
   // Navigation & View states
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState("month"); // month, week, day, agenda
+
+  // Phone Sync & Push Notification States
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [copiedFeed, setCopiedFeed] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      setPushEnabled(true);
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsModalOpen(false);
+        setShowSyncModal(false);
+        setConflictModal(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleEnablePush = async () => {
+    if ("Notification" in window) {
+      const perm = await Notification.requestPermission();
+      if (perm === "granted") {
+        setPushEnabled(true);
+        new Notification("🔔 Phone & Device Notifications Enabled!", {
+          body: "You will receive real-time alerts on your device for all activities, deadlines, and task alarms.",
+          icon: "/favicon.ico"
+        });
+      } else {
+        alert("Notification permission denied by browser settings.");
+      }
+    } else {
+      alert("Browser does not support desktop/phone push notifications.");
+    }
+  };
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -555,6 +594,14 @@ export default function ProjectCalendar() {
                 >
                   Today
                 </button>
+
+                <button
+                  onClick={() => setShowSyncModal(true)}
+                  className="ml-2 px-3 py-2 text-xs font-bold rounded-lg border border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Smartphone className="h-3.5 w-3.5" />
+                  <span>Sync to Phone</span>
+                </button>
               </div>
 
               {/* View toggle */}
@@ -837,8 +884,14 @@ export default function ProjectCalendar() {
 
         {/* Create/Edit Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="w-full max-w-md rounded-2xl bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border p-6 shadow-2xl space-y-5">
+          <div
+            onClick={() => setIsModalOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 cursor-pointer"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border p-6 shadow-2xl space-y-5 cursor-default"
+            >
               
               <div className="flex items-center justify-between pb-3 border-b border-light-border dark:border-dark-border">
                 <h3 className="text-lg font-bold text-light-text dark:text-dark-text">
@@ -1026,8 +1079,14 @@ export default function ProjectCalendar() {
 
         {/* Conflict Rescheduling Prompt */}
         {conflictModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-            <div className="w-full max-w-md rounded-2xl bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border p-6 shadow-2xl space-y-4">
+          <div
+            onClick={() => setConflictModal(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 cursor-pointer"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border p-6 shadow-2xl space-y-4 cursor-default"
+            >
               <div className="flex items-center gap-3 text-amber-500">
                 <AlertTriangle className="h-8 w-8 animate-bounce" />
                 <h3 className="text-lg font-bold">Scheduling Conflict Detected</h3>
@@ -1067,6 +1126,128 @@ export default function ProjectCalendar() {
                   Reschedule Anyway
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sync to Phone Calendar Modal */}
+        {showSyncModal && (
+          <div
+            onClick={() => setShowSyncModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 cursor-pointer"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-6 cursor-default"
+            >
+              
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-500">
+                    <Smartphone className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sync to Phone & Real Calendar</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Receive live alarms & events directly on your phone</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* 1. Live iCalendar Feed for iPhone & Apple / Outlook Calendar */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    📱 Live iPhone / Apple / Outlook Feed (webcal://)
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                    Auto-Updates
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Subscribe once on your iPhone or Mac Calendar to get live task updates and 15-minute phone alarms automatically.
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getIcsFeedUrl()}
+                    className="flex-1 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl text-slate-700 dark:text-slate-300 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(getIcsFeedUrl());
+                      setCopiedFeed(true);
+                      setTimeout(() => setCopiedFeed(false), 2000);
+                    }}
+                    className="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    {copiedFeed ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <span>{copiedFeed ? "Copied!" : "Copy URL"}</span>
+                  </button>
+                </div>
+                <a
+                  href={getWebcalFeedUrl()}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline pt-1"
+                >
+                  <span>📲 Subscribe on iPhone / Apple Calendar App</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </a>
+              </div>
+
+              {/* 2. One-Click Google Calendar & Download */}
+              <div className="grid grid-cols-2 gap-3">
+                <a
+                  href={getGoogleCalendarUrl({ title: "Portal Work & Activities", description: "Admin Portal Calendar", start: new Date() })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-900 dark:text-amber-300 transition text-center space-y-1 block cursor-pointer"
+                >
+                  <p className="text-xs font-bold">🗓️ Google Calendar</p>
+                  <p className="text-[11px] opacity-80">1-Click Add to Google Calendar</p>
+                </a>
+
+                <a
+                  href={getIcsFeedUrl()}
+                  download="admin-portal-calendar.ics"
+                  className="p-4 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-900 dark:text-emerald-300 transition text-center space-y-1 block cursor-pointer"
+                >
+                  <p className="text-xs font-bold">📥 Download .ics File</p>
+                  <p className="text-[11px] opacity-80">Import to Any Device</p>
+                </a>
+              </div>
+
+              {/* 3. Push Notification Permission Toggle */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+                    <Bell className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Real Phone & Push Notifications</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Sound & pop-up alerts for new events</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleEnablePush}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+                    pushEnabled
+                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                      : "bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer shadow-xs"
+                  }`}
+                >
+                  {pushEnabled ? "✓ Enabled" : "Enable Alerts"}
+                </button>
+              </div>
+
             </div>
           </div>
         )}

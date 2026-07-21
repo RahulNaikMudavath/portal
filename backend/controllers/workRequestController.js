@@ -239,8 +239,22 @@ const createWorkRequest = async (req, res) => {
 
 const getAllWorkRequests = async (req, res) => {
   try {
+    const org = req.user.organization || req.user.company || "";
+    let query = { createdBy: req.user.id };
+    if (org) {
+      const User = require("../models/User");
+      const adminsInOrg = await User.find({
+        $or: [
+          { organization: org },
+          { company: org }
+        ]
+      }).distinct("_id");
+      if (adminsInOrg.length > 0) {
+        query = { createdBy: { $in: adminsInOrg } };
+      }
+    }
 
-    const requests = await WorkRequest.find()
+    const requests = await WorkRequest.find(query)
       .populate("assignedEngineer", "name email")
       .sort({
         createdAt: -1,

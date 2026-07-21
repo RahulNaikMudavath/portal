@@ -8,86 +8,86 @@ function WorkRequestPreview({ request }) {
     const [showModal, setShowModal] = useState(false);
   if (!request) {
     return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-slate-700 bg-slate-900">
-        <p className="text-slate-400">
-          Select a Work Request
+      <div className="flex h-full items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center shadow-sm">
+        <p className="text-sm font-medium text-slate-400 dark:text-slate-500">
+          Select a Work Request to preview details
         </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-7">
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-7 shadow-sm">
 
       {/* Header */}
 
-      <div className="border-b border-slate-700 pb-6">
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
               {request.companyName}
             </h1>
 
-            <p className="mt-2 text-lg text-slate-400">
+            <p className="mt-1.5 text-base font-semibold text-slate-600 dark:text-slate-300">
               {request.subject}
             </p>
 
-            <p className="mt-3 text-sm text-slate-500">
-              {request.requestId}
+            <p className="mt-2 text-xs font-mono text-slate-400 dark:text-slate-500">
+              ID: {request.requestId}
             </p>
           </div>
 
           <span
-            className={`rounded-full px-4 py-2 text-sm font-semibold
+            className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider
             ${
               request.priority === "urgent"
-                ? "bg-red-500/20 text-red-400"
+                ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900"
                 : request.priority === "high"
-                ? "bg-orange-500/20 text-orange-400"
-                : "bg-blue-500/20 text-blue-400"
+                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900"
+                : "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900"
             }
             `}
           >
-            {request.priority.toUpperCase()}
+            {request.priority}
           </span>
         </div>
       </div>
 
-      {/* Customer */}
+      {/* Customer Grid */}
 
-      <div className="mt-8 grid grid-cols-2 gap-4">
-        <div className="rounded-xl bg-slate-800 p-4">
-          📞
+      <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-4">
+          <span className="text-lg">📞</span>
 
-          <p className="mt-1 text-sm text-slate-400">Phone</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Phone</p>
 
-          <p className="mt-1 text-white">{request.phoneNumber}</p>
+          <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">{request.phoneNumber}</p>
         </div>
 
-        <div className="rounded-xl bg-slate-800 p-4">
-          🏢
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-4">
+          <span className="text-lg">🏢</span>
 
-          <p className="mt-1 text-sm text-slate-400">Company</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Company</p>
 
-          <p className="mt-1 text-white">{request.companyName}</p>
+          <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">{request.companyName}</p>
         </div>
 
-        <div className="rounded-xl bg-slate-800 p-4">
-          📍
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-4">
+          <span className="text-lg">📍</span>
 
-          <p className="mt-1 text-sm text-slate-400">Site</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Site Address</p>
 
-          <p className="mt-1 text-white">
+          <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">
             {request.siteAddress || "Not Provided"}
           </p>
         </div>
 
-        <div className="rounded-xl bg-slate-800 p-4">
-          📅
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-4">
+          <span className="text-lg">📅</span>
 
-          <p className="mt-1 text-sm text-slate-400">Created</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">Created Date</p>
 
-          <p className="mt-1 text-white">
+          <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">
             {new Date(request.createdAt).toLocaleDateString()}
           </p>
         </div>
@@ -97,11 +97,11 @@ function WorkRequestPreview({ request }) {
 
       <div className="mt-8">
 
-        <h3 className="font-semibold text-xl mt-10 mb-5 flex items-center gap-2">
-          💬 Conversation
+        <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          💬 Conversation History
         </h3>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
 
           {request.conversation?.map((msg, index) => (
             <div
@@ -114,48 +114,34 @@ function WorkRequestPreview({ request }) {
             >
 
               <div
-                className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-lg
-
-${
+                className={`max-w-[85%] rounded-2xl p-4 shadow-xs border ${
                   msg.sender === "Customer"
-                    ? "bg-slate-800 border border-slate-700"
-                    : "bg-blue-600"
-                }
-
-`}
+                    ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700"
+                    : "bg-indigo-600 text-white border-indigo-700"
+                }`}
               >
 
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-1.5 gap-4">
 
-                  <p className={`font-semibold
-
-${
+                  <p className={`text-xs font-bold ${
                     msg.sender === "Customer"
-                      ? "text-blue-400"
-                      : "text-white"
-                  }
-
-`}>
-
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-indigo-100"
+                  }`}>
                     {msg.sender}
-
                   </p>
 
-                  <p className="text-xs text-slate-400">
-
+                  <p className="text-[10px] opacity-70">
                     {new Date(msg.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
-
                   </p>
 
                 </div>
 
-                <p className="text-white whitespace-pre-wrap">
-
+                <p className="text-xs leading-relaxed whitespace-pre-wrap">
                   {msg.message}
-
                 </p>
 
               </div>
@@ -166,34 +152,31 @@ ${
         </div>
 
       </div>
-      <h3 className="font-semibold text-xl mt-10 mb-5">
-📎 Attachments
-</h3>
 
-<div className="space-y-4">
+      <h3 className="font-bold text-lg text-slate-900 dark:text-white mt-8 mb-4">
+        📎 Attachments
+      </h3>
 
-{request.attachments?.map((file,index)=>(
+      <div className="space-y-3">
 
-<div
-key={index}
-className="flex justify-between items-center bg-slate-800 rounded-2xl p-5 border border-slate-700"
->
+      {request.attachments?.map((file,index)=>(
 
-<div>
+      <div
+      key={index}
+      className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700"
+      >
 
-<p className="text-white font-semibold">
+      <div>
 
-📄 {file.fileName}
+      <p className="text-sm font-bold text-slate-900 dark:text-white">
+        📄 {file.fileName}
+      </p>
 
-</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+        {(file.size/1024).toFixed(0)} KB
+      </p>
 
-<p className="text-slate-400 text-sm">
-
-{(file.size/1024).toFixed(0)} KB
-
-</p>
-
-</div>
+      </div>
 
 <div className="flex gap-3">
 

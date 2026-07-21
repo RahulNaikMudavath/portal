@@ -4,39 +4,38 @@ function WorkRequestCard({
   onClick,
 }) {
   const priorityColor = {
-    urgent: "bg-red-600",
-    high: "bg-orange-500",
-    medium: "bg-yellow-500",
-    low: "bg-green-500",
+    urgent: "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50",
+    high: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50",
+    medium: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/50",
+    low: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50",
   };
 
   return (
     <div
       onClick={() => onClick(request)}
-      className={`cursor-pointer rounded-2xl border p-5 transition-all duration-300
-      ${
+      className={`cursor-pointer rounded-2xl border p-5 transition-all duration-200 shadow-sm ${
         selected
-          ? "border-blue-500 bg-slate-800"
-          : "border-slate-700 bg-slate-900 hover:border-slate-500"
+          ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/70 dark:bg-slate-800/90"
+          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-300 dark:hover:border-slate-700"
       }`}
     >
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start gap-2">
 
         <div>
 
-          <h3 className="text-lg font-bold text-white">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
             {request.companyName || request.customerName}
           </h3>
 
-          <p className="text-slate-400 mt-1">
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-1">
             {request.subject}
           </p>
 
         </div>
 
         <span
-          className={`text-xs px-2 py-1 rounded-full text-white ${
-            priorityColor[request.priority]
+          className={`text-[11px] font-bold px-2.5 py-1 rounded-full border uppercase ${
+            priorityColor[request.priority] || priorityColor.medium
           }`}
         >
           {request.priority}

@@ -27,8 +27,12 @@ const {
   addTaskNote,
   editTaskNote,
   deleteTaskNote,
+  deleteTaskAttachment,
   submitCustomerSignOff
 } = require("../controllers/taskController");
+
+// 🗑️ Delete task media attachment
+router.post("/:id/delete-attachment", protect, deleteTaskAttachment);
 
 
 // 👑 Admin creates task (with file upload)

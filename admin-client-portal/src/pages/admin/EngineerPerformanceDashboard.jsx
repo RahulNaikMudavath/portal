@@ -700,20 +700,67 @@ export default function EngineerPerformanceDashboard() {
                         <p className="font-semibold text-light-text dark:text-dark-text">{selectedEngineer.phone}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-900 rounded-xl">
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-900 rounded-xl col-span-2">
                       <Mail className="h-4 w-4 text-indigo-500" />
                       <div className="truncate">
                         <p className="text-gray-400">Email</p>
                         <p className="font-semibold text-light-text dark:text-dark-text truncate">{selectedEngineer.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-900 rounded-xl col-span-2">
-                      <MapPin className="h-4 w-4 text-indigo-500" />
-                      <div>
-                        <p className="text-gray-400">Location/City</p>
-                        <p className="font-semibold text-light-text dark:text-dark-text">{selectedEngineer.city}</p>
+                  </div>
+
+                  {/* Live Real-Time GPS Location Card */}
+                  <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-950 p-4 space-y-3 shadow-lg relative overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Live GPS Location</span>
                       </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {selectedEngineer.currentLocation?.lat ? "🟢 Checked In On-Site" : "🟡 Field Mode (Active)"}
+                      </span>
                     </div>
+
+                    <div className="space-y-1 pt-1">
+                      <p className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <span>{selectedEngineer.currentLocation?.address || selectedEngineer.city || "Location Active"}</span>
+                      </p>
+
+                      {selectedEngineer.currentLocation?.lat && selectedEngineer.currentLocation?.lng ? (
+                        <p className="text-xs font-mono text-slate-400 pl-5">
+                          GPS: {selectedEngineer.currentLocation.lat.toFixed(5)}, {selectedEngineer.currentLocation.lng.toFixed(5)}
+                        </p>
+                      ) : null}
+
+                      {selectedEngineer.currentLocation?.updatedAt && (
+                        <p className="text-[10px] text-slate-500 pl-5">
+                          Last ping: {new Date(selectedEngineer.currentLocation.updatedAt).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
+                    </div>
+
+                    {selectedEngineer.currentLocation?.lat && selectedEngineer.currentLocation?.lng ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${selectedEngineer.currentLocation.lat},${selectedEngineer.currentLocation.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 w-full mt-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-md cursor-pointer"
+                      >
+                        <span>🗺️ Open Live Google Maps</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </a>
+                    ) : (
+                      <a
+                        href={`https://www.google.com/maps/search/${encodeURIComponent(selectedEngineer.city || "Site")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 w-full mt-2 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition shadow-md cursor-pointer"
+                      >
+                        <span>🗺️ View City Map Location</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </a>
+                    )}
                   </div>
 
                   {/* Skills Grid */}
@@ -750,10 +797,34 @@ export default function EngineerPerformanceDashboard() {
                       <p className="font-semibold text-light-text dark:text-dark-text">{selectedEngineer.experience || 0} Years</p>
                     </div>
                     <div>
-                      <p className="text-gray-450 font-bold uppercase text-[9px] tracking-wider mb-0.5">Customer Rating</p>
+                      <p className="text-gray-450 font-bold uppercase text-[9px] tracking-wider mb-0.5">Customer/Admin Rating</p>
                       <div className="flex items-center gap-1 mt-0.5">
                         <span className="font-bold text-light-text dark:text-dark-text">{selectedEngineer.avgRating || 0}</span>
-                        <span className="text-amber-505 text-xs">★</span>
+                        <span className="text-amber-400 text-xs">★</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Career Growth Tier & Admin Rating Summary */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 border border-indigo-500/30 space-y-2 shadow-md">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400">Career Growth Tier</span>
+                      <span className="text-xs font-black px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        {selectedEngineer.growthTier || "📈 Steady Performer"}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <p className="text-xs text-slate-400">Overall Rating Score</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-xl font-extrabold text-white">{selectedEngineer.avgRating || 0}</span>
+                          <span className="text-amber-400 text-lg">★</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-400">Admin Ratings Avg</p>
+                        <p className="text-sm font-bold text-emerald-400">{selectedEngineer.adminAvgRating || selectedEngineer.avgRating || 0} ★ ({selectedEngineer.adminRatingsCount || 0} reviews)</p>
                       </div>
                     </div>
                   </div>

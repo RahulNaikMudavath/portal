@@ -86,7 +86,7 @@ export default function TaskWorkspace() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Task List Panel */}
         <div
-          className={`lg:col-span-4 ${
+          className={`lg:col-span-4 lg:sticky lg:top-6 max-h-[calc(100vh-100px)] overflow-y-auto pr-1 ${
             selectedTask ? "hidden lg:block" : "block"
           }`}
         >

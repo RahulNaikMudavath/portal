@@ -128,6 +128,13 @@ export default function CompleteProfile() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
+      // Notify other parts of the app that user profile changed
+      try {
+        window.dispatchEvent(new CustomEvent("user-updated", { detail: res.data.user }));
+      } catch (err) {
+        // ignore
+      }
+
       setSuccessMsg("Onboarding completed successfully! Launching workspace...");
 
       setTimeout(() => {
