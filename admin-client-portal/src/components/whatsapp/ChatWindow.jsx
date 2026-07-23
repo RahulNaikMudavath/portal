@@ -2,7 +2,7 @@ import ChatHeader from "./ChatHeader";
 import Conversation from "./Conversation";
 import ChatInput from "./ChatInput";
 
-const ChatWindow = ({ chat }) => {
+const ChatWindow = ({ chat, onSendMessage }) => {
   if (!chat) {
     return (
       <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 font-medium bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -22,7 +22,7 @@ const ChatWindow = ({ chat }) => {
 
       </div>
 
-      <ChatInput />
+      <ChatInput chat={chat} onSendMessage={onSendMessage} />
 
     </div>
   );

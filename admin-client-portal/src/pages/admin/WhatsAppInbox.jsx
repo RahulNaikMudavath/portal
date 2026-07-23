@@ -5,11 +5,10 @@ import ChatSidebar from "../../components/whatsapp/ChatSidebar";
 import ChatWindow from "../../components/whatsapp/ChatWindow";
 import AISummaryPanel from "../../components/whatsapp/AISummaryPanel";
 
-import { getConversations } from "../../services/whatsappService";
+import { getConversations, sendMessage as sendWhatsAppApi } from "../../services/whatsappService";
 import socket from "../../socket";
 
 function WhatsAppInbox() {
-
     const [chats, setChats] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
     const selectedChatRef = useRef(null);
@@ -33,45 +32,64 @@ function WhatsAppInbox() {
             if (currentSelected) {
                 const updatedChat = data.find(
                     chat =>
-                        chat.conversationId ===
-                        currentSelected.conversationId
+                        chat.conversationId === currentSelected.conversationId ||
+                        chat._id === currentSelected._id
                 );
-                if (updatedChat)
+                if (updatedChat) {
                     setSelectedChat(updatedChat);
+                }
             }
-        }
-        catch (err) {
-            console.error(err);
+        } catch (err) {
+            console.error("Failed to load WhatsApp conversations:", err);
         }
     };
 
     useEffect(() => {
         loadChats();
 
-        // Listen for new messages
-        socket.on("newMessage", (message) => {
-            console.log("🔥 SOCKET EVENT RECEIVED");
-            console.log(message);
+        // ⚡ Socket.IO Real-time listeners (Webhook -> MongoDB -> Socket.IO -> Admin Inbox)
+        const handleNewMessage = (msg) => {
+            console.log("⚡ [Socket.IO] New WhatsApp message received:", msg);
             loadChats();
-        });
+        };
 
-        // Listen for assigned work requests
-        socket.on("workRequestAssigned", (data) => {
-            console.log("🔥 WORK REQUEST ASSIGNED EVENT RECEIVED", data);
+        const handleConversationUpdated = (conv) => {
+            console.log("⚡ [Socket.IO] WhatsApp conversation updated:", conv);
             loadChats();
-        });
+        };
+
+        const handleWorkRequestAssigned = (data) => {
+            console.log("⚡ [Socket.IO] Work request assigned:", data);
+            loadChats();
+        };
+
+        socket.on("newMessage", handleNewMessage);
+        socket.on("conversationUpdated", handleConversationUpdated);
+        socket.on("workRequestAssigned", handleWorkRequestAssigned);
 
         return () => {
-            socket.off("newMessage");
-            socket.off("workRequestAssigned");
+            socket.off("newMessage", handleNewMessage);
+            socket.off("conversationUpdated", handleConversationUpdated);
+            socket.off("workRequestAssigned", handleWorkRequestAssigned);
         };
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    console.log("Selected Chat:", selectedChat);
+    const handleSendMessage = async (chat, text) => {
+        try {
+            const recipient = chat.phoneNumber || chat.conversationId;
+            await sendWhatsAppApi({
+                to: recipient,
+                text: text
+            });
+            await loadChats();
+        } catch (err) {
+            console.error("Failed to send WhatsApp message:", err);
+        }
+    };
 
     return (
-
         <AdminLayout>
             <div className="mb-4">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -83,39 +101,29 @@ function WhatsAppInbox() {
             </div>
 
             <div className="grid grid-cols-12 h-[calc(85vh-3.5rem)] gap-4">
-
                 <div className="col-span-3 h-full">
-
                     <ChatSidebar
                         chats={chats}
                         selected={selectedChat}
                         onSelect={setSelectedChat}
                     />
-
                 </div>
 
                 <div className="col-span-6 h-full">
-
                     <ChatWindow
                         chat={selectedChat}
+                        onSendMessage={handleSendMessage}
                     />
-
                 </div>
 
                 <div className="col-span-3 h-full">
-
                     <AISummaryPanel
                         chat={selectedChat}
                     />
-
                 </div>
-
             </div>
-
         </AdminLayout>
-
     );
-
 }
 
 export default WhatsAppInbox;

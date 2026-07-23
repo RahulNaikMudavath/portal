@@ -1,9 +1,20 @@
+import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 
 const Conversation = ({ chat }) => {
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chat?.messages]);
+
   if (!chat) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">
+      <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 font-medium">
         Select a conversation
       </div>
     );
@@ -13,26 +24,14 @@ const Conversation = ({ chat }) => {
 
   return (
     <div className="flex flex-col gap-3 p-6 overflow-y-auto h-full">
-      {messages.map((msg) => (
+      {messages.map((msg, idx) => (
         <MessageBubble
-          key={msg._id}
-          message={{
-            sender:
-              msg.direction === "incoming"
-                ? "Customer"
-                : "Admin",
-
-            text: msg.text,
-
-            type: msg.direction,
-
-            time: new Date(msg.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          }}
+          key={msg._id || msg.metaMessageId || `msg_${idx}`}
+          message={msg}
         />
       ))}
+
+      <div ref={messagesEndRef} />
 
       {messages.length === 0 && (
         <div className="text-center text-slate-400 dark:text-slate-500 font-medium my-auto py-12">

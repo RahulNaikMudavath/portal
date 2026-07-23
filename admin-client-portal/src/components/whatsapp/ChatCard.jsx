@@ -1,5 +1,15 @@
 const ChatCard = ({ chat, selected, onSelect }) => {
-  const isSelected = selected?._id === chat._id;
+  const isSelected = selected?._id === chat._id || (selected?.conversationId && selected?.conversationId === chat.conversationId);
+  const unread = chat.unreadCount || chat.unread || 0;
+
+  const rawTime = chat.lastMessageAt || chat.lastTime || chat.updatedAt;
+  const timeFormatted = rawTime
+    ? new Date(rawTime).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+
   return (
     <div
       onClick={() => onSelect(chat)}
@@ -25,18 +35,20 @@ const ChatCard = ({ chat, selected, onSelect }) => {
             </h3>
 
             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 flex-shrink-0">
-              {chat.lastTime
-                ? new Date(chat.lastTime).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : ""}
+              {timeFormatted}
             </span>
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-            {chat.lastMessage || "No messages"}
-          </p>
+          <div className="flex items-center justify-between gap-1 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex-1">
+              {chat.lastMessage || "No messages"}
+            </p>
+            {unread > 0 && (
+              <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 shadow-xs">
+                {unread}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

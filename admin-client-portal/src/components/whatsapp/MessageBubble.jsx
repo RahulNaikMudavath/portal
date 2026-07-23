@@ -1,5 +1,5 @@
 const MessageBubble = ({ message }) => {
-  const isCustomer = message.sender === "Customer";
+  const isCustomer = message.direction === "incoming" || message.type === "incoming" || message.sender === "Customer";
 
   const time = message.time || (message.createdAt
     ? new Date(message.createdAt).toLocaleTimeString([], {
@@ -7,6 +7,10 @@ const MessageBubble = ({ message }) => {
         minute: "2-digit",
       })
     : "");
+
+  const senderName = isCustomer
+    ? (message.customerName || "Customer")
+    : "Admin";
 
   return (
     <div
@@ -22,7 +26,7 @@ const MessageBubble = ({ message }) => {
         }`}
       >
         <p className="text-[11px] font-bold mb-1 opacity-75">
-          {message.sender}
+          {senderName}
         </p>
 
         <p className="whitespace-pre-wrap leading-relaxed">

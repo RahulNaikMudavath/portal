@@ -1,14 +1,26 @@
 import { useState } from "react";
 
-const ChatInput = () => {
+const ChatInput = ({ chat, onSendMessage }) => {
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const sendMessage = () => {
-    if (!message.trim()) return;
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
 
-    console.log("Sending:", message);
-
+    const textToSend = message.trim();
     setMessage("");
+    setSending(true);
+
+    try {
+      if (onSendMessage && chat) {
+        await onSendMessage(chat, textToSend);
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      setMessage(textToSend);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -19,16 +31,18 @@ const ChatInput = () => {
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Type a message..."
-          className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 px-5 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200 dark:border-slate-700 focus:border-indigo-500 transition"
+          disabled={sending}
+          className="flex-1 rounded-full bg-slate-100 dark:bg-slate-800 px-5 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200 dark:border-slate-700 focus:border-indigo-500 transition disabled:opacity-50"
         />
 
         <button
-          onClick={sendMessage}
-          className="rounded-full bg-indigo-600 hover:bg-indigo-700 px-6 py-3 text-white font-bold text-sm shadow-md transition cursor-pointer"
+          onClick={handleSend}
+          disabled={sending || !message.trim()}
+          className="rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 px-6 py-3 text-white font-bold text-sm shadow-md transition cursor-pointer"
         >
-          Send
+          {sending ? "Sending..." : "Send"}
         </button>
 
       </div>
