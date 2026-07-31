@@ -11,8 +11,10 @@ exports.signup = async (req, res) => {
       skills, department, workMode, experience, availability, photo
     } = req.body;
 
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
+
     // check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: normalizedEmail });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -32,7 +34,7 @@ exports.signup = async (req, res) => {
     // create user
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role,
       phone,
@@ -62,9 +64,10 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
     // check user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
