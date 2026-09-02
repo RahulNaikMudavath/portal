@@ -45,7 +45,7 @@ const AISummaryPanel = ({ chat }) => {
 
             {/* Header */}
 
-            <div className="border-b border-slate-200 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-800/40">
+            <div className="border-b border-slate-200 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-800/40 flex-shrink-0">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     🤖 AI Assistant
                 </h2>
@@ -53,7 +53,7 @@ const AISummaryPanel = ({ chat }) => {
 
             {/* Body */}
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="flex-1 overflow-y-auto min-h-0 p-5 space-y-5">
 
                 {/* Customer */}
 
@@ -185,7 +185,7 @@ const AISummaryPanel = ({ chat }) => {
 
             {/* Footer Buttons */}
 
-            <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-2.5 bg-slate-50/40 dark:bg-slate-900/60">
+            <div className="border-t border-slate-200 dark:border-slate-800 p-5 space-y-2.5 bg-slate-50/40 dark:bg-slate-900/60 flex-shrink-0">
 
                 <button
                     onClick={() => {

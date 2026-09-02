@@ -16,7 +16,7 @@ const ChatSidebar = ({ chats = [], selected, onSelect }) => {
     <div className="h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col rounded-2xl shadow-sm overflow-hidden">
 
       {/* Header */}
-      <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+      <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex-shrink-0">
 
         <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <span>💬</span> WhatsApp Conversations
@@ -29,7 +29,7 @@ const ChatSidebar = ({ chats = [], selected, onSelect }) => {
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
 
         <input
           type="text"
@@ -42,7 +42,7 @@ const ChatSidebar = ({ chats = [], selected, onSelect }) => {
       </div>
 
       {/* Chats */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+      <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60">
 
         {filteredChats.length === 0 ? (
           <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-sm">

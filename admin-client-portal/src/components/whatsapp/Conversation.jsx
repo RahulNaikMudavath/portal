@@ -23,21 +23,20 @@ const Conversation = ({ chat }) => {
   const messages = chat.messages || [];
 
   return (
-    <div className="flex flex-col gap-3 p-6 overflow-y-auto h-full">
-      {messages.map((msg, idx) => (
-        <MessageBubble
-          key={msg._id || msg.metaMessageId || `msg_${idx}`}
-          message={msg}
-        />
-      ))}
-
-      <div ref={messagesEndRef} />
-
-      {messages.length === 0 && (
+    <div className="flex flex-col gap-3.5 p-4 sm:p-6 min-h-full justify-end">
+      {messages.length === 0 ? (
         <div className="text-center text-slate-400 dark:text-slate-500 font-medium my-auto py-12">
           💬 No messages in this conversation yet.
         </div>
+      ) : (
+        messages.map((msg, idx) => (
+          <MessageBubble
+            key={msg._id || msg.metaMessageId || `msg_${idx}`}
+            message={msg}
+          />
+        ))
       )}
+      <div ref={messagesEndRef} className="h-0" />
     </div>
   );
 };

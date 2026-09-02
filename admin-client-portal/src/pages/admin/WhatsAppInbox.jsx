@@ -108,36 +108,38 @@ function WhatsAppInbox() {
 
     return (
         <AdminLayout>
-            <div className="mb-4">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    📥 Work Inbox & WhatsApp Control Center
-                </h1>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5">
-                    Real-time customer conversations & AI-powered work request extraction.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-12 h-[calc(85vh-3.5rem)] gap-4">
-                <div className="col-span-3 h-full">
-                    <ChatSidebar
-                        chats={chats}
-                        selected={selectedChat}
-                        onSelect={setSelectedChat}
-                    />
+            <div className="flex flex-col h-[calc(100vh-5.5rem)] overflow-hidden">
+                <div className="mb-3 flex-shrink-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+                        📥 Work Inbox & WhatsApp Control Center
+                    </h1>
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5">
+                        Real-time customer conversations & AI-powered work request extraction.
+                    </p>
                 </div>
 
-                <div className="col-span-6 h-full">
-                    <ChatWindow
-                        chat={selectedChat}
-                        onSendMessage={handleSendMessage}
-                        onSendMedia={handleSendMedia}
-                    />
-                </div>
+                <div className="grid grid-cols-12 flex-1 min-h-0 gap-4 overflow-hidden">
+                    <div className="col-span-12 lg:col-span-3 h-full overflow-hidden">
+                        <ChatSidebar
+                            chats={chats}
+                            selected={selectedChat}
+                            onSelect={setSelectedChat}
+                        />
+                    </div>
 
-                <div className="col-span-3 h-full">
-                    <AISummaryPanel
-                        chat={selectedChat}
-                    />
+                    <div className="col-span-12 lg:col-span-6 h-full overflow-hidden">
+                        <ChatWindow
+                            chat={selectedChat}
+                            onSendMessage={handleSendMessage}
+                            onSendMedia={handleSendMedia}
+                        />
+                    </div>
+
+                    <div className="col-span-12 lg:col-span-3 h-full overflow-hidden">
+                        <AISummaryPanel
+                            chat={selectedChat}
+                        />
+                    </div>
                 </div>
             </div>
         </AdminLayout>
