@@ -2,7 +2,7 @@ const WhatsappMessage = require("../models/Message");
 const WhatsAppConversation = require("../models/Conversation");
 const { analyzeConversation } = require("../../../modules/ai/services/aiService");
 const { verifyMetaWebhook, processMetaIncomingWebhook } = require("../webhooks/webhookHandler");
-const { sendTextMessage } = require("../services/messageService");
+const { sendTextMessage, sendMediaMessage } = require("../services/messageService");
 const {
   validateWebhookVerifyQuery,
   validateSendMessagePayload
@@ -99,18 +99,7 @@ const metaVerifyWebhook = (req, res) => {
   }
 };
 
-const fs = require("fs");
-const path = require("path");
-
 const metaReceiveWebhook = async (req, res) => {
-    console.log("🔥 RAW WEBHOOK:");
-    console.dir(req.body, { depth: null });
-    console.log("=================================");
-    console.log("META WEBHOOK RECEIVED");
-    console.log("HEADERS:", req.headers);
-    console.log("BODY:", JSON.stringify(req.body, null, 2));
-    console.log("=================================");
-
     try {
       const io = req.app.get("io");
       const body = req.body;
@@ -153,9 +142,69 @@ const sendMessage = async (req, res) => {
   }
 };
 
+/**
+ * 📎 Send Outgoing Media Message (Image, Video, Audio, Document) (POST /api/whatsapp/send-media)
+ */
+const sendMedia = async (req, res) => {
+  try {
+    const recipient = req.body.to || req.body.phoneNumber;
+    if (!recipient) {
+      return res.status(400).json({ message: "Recipient phone number ('to' or 'phoneNumber') is required" });
+    }
+
+    let mediaUrl = req.body.mediaUrl || "";
+    let mimeType = req.body.mimeType || "";
+    let fileName = req.body.fileName || "";
+    let fileSize = req.body.fileSize || 0;
+
+    // If file was uploaded via multer/cloudinary
+    if (req.file) {
+      mediaUrl = req.file.path || req.file.secure_url || req.file.url;
+      mimeType = req.file.mimetype || "";
+      fileName = req.file.originalname || "";
+      fileSize = req.file.size || 0;
+    }
+
+    if (!mediaUrl) {
+      return res.status(400).json({ message: "No media file or mediaUrl provided" });
+    }
+
+    // Determine media type
+    let mediaType = "image";
+    if (mimeType.startsWith("video/")) mediaType = "video";
+    else if (mimeType.startsWith("audio/")) mediaType = "audio";
+    else if (mimeType.includes("pdf") || mimeType.includes("document") || mimeType.includes("sheet") || mimeType.includes("text") || mimeType.includes("zip") || mimeType.includes("octet-stream")) {
+      mediaType = "document";
+    } else if (req.body.mediaType) {
+      mediaType = req.body.mediaType;
+    }
+
+    const caption = (req.body.caption || req.body.text || "").trim();
+    const io = req.app.get("io");
+    const senderUserId = req.user ? req.user._id : null;
+
+    const result = await sendMediaMessage(
+      recipient,
+      mediaUrl,
+      mediaType,
+      caption,
+      fileName,
+      { mimeType, fileSize, fileName },
+      io,
+      senderUserId
+    );
+
+    res.status(201).json(result);
+  } catch (err) {
+    console.error("Error sending WhatsApp media message:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getConversations,
   metaVerifyWebhook,
   metaReceiveWebhook,
-  sendMessage
+  sendMessage,
+  sendMedia
 };

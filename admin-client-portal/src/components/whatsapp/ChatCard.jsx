@@ -10,6 +10,42 @@ const ChatCard = ({ chat, selected, onSelect }) => {
       })
     : "";
 
+  const renderLastMessagePreview = () => {
+    const text = chat.lastMessage || "";
+    if (!text) return "No messages";
+
+    if (text.startsWith("[Image]")) {
+      return (
+        <span className="flex items-center gap-1">
+          <span>📷</span> Photo
+        </span>
+      );
+    }
+    if (text.startsWith("[Video]")) {
+      return (
+        <span className="flex items-center gap-1">
+          <span>🎥</span> Video
+        </span>
+      );
+    }
+    if (text.startsWith("[Audio]")) {
+      return (
+        <span className="flex items-center gap-1">
+          <span>🎙️</span> Voice note
+        </span>
+      );
+    }
+    if (text.startsWith("[Document") || text.startsWith("[PDF")) {
+      return (
+        <span className="flex items-center gap-1">
+          <span>📄</span> Document
+        </span>
+      );
+    }
+
+    return text;
+  };
+
   return (
     <div
       onClick={() => onSelect(chat)}
@@ -41,7 +77,7 @@ const ChatCard = ({ chat, selected, onSelect }) => {
 
           <div className="flex items-center justify-between gap-1 mt-0.5">
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex-1">
-              {chat.lastMessage || "No messages"}
+              {renderLastMessagePreview()}
             </p>
             {unread > 0 && (
               <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 shadow-xs">

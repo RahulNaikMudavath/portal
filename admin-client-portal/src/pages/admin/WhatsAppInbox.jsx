@@ -5,7 +5,7 @@ import ChatSidebar from "../../components/whatsapp/ChatSidebar";
 import ChatWindow from "../../components/whatsapp/ChatWindow";
 import AISummaryPanel from "../../components/whatsapp/AISummaryPanel";
 
-import { getConversations, sendMessage as sendWhatsAppApi } from "../../services/whatsappService";
+import { getConversations, sendMessage as sendWhatsAppApi, sendMediaMessage as sendWhatsAppMediaApi } from "../../services/whatsappService";
 import socket from "../../socket";
 
 function WhatsAppInbox() {
@@ -90,6 +90,22 @@ function WhatsAppInbox() {
         }
     };
 
+    const handleSendMedia = async (chat, file, caption) => {
+        try {
+            const recipient = chat.phoneNumber || chat.conversationId;
+            const formData = new FormData();
+            formData.append("to", recipient);
+            formData.append("file", file);
+            if (caption) formData.append("caption", caption);
+
+            await sendWhatsAppMediaApi(formData);
+            await loadChats();
+        } catch (err) {
+            console.error("Failed to send WhatsApp media message:", err);
+            throw err;
+        }
+    };
+
     return (
         <AdminLayout>
             <div className="mb-4">
@@ -114,6 +130,7 @@ function WhatsAppInbox() {
                     <ChatWindow
                         chat={selectedChat}
                         onSendMessage={handleSendMessage}
+                        onSendMedia={handleSendMedia}
                     />
                 </div>
 

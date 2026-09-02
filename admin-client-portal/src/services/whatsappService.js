@@ -9,3 +9,12 @@ export const sendMessage = async (data) => {
     const res = await API.post("/api/whatsapp/send", data);
     return res.data;
 };
+
+export const sendMediaMessage = async (formData) => {
+    const res = await API.post("/api/whatsapp/send-media", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return res.data;
+};

@@ -13,9 +13,20 @@ const AISummaryPanel = ({ chat }) => {
         );
     }
 
-    const attachmentCount = Array.isArray(chat.attachments)
+    const mediaMessages = (chat.messages || []).filter((m) => {
+        const url = m.media?.url || m.mediaUrl;
+        return (
+            typeof url === "string" &&
+            (url.startsWith("http://") ||
+                url.startsWith("https://") ||
+                url.startsWith("blob:") ||
+                url.startsWith("data:"))
+        );
+    });
+
+    const attachmentCount = Array.isArray(chat.attachments) && chat.attachments.length > 0
         ? chat.attachments.length
-        : 0;
+        : mediaMessages.length;
 
     const customerName = chat.customerName?.trim() || "Unknown Customer";
 
@@ -106,7 +117,7 @@ const AISummaryPanel = ({ chat }) => {
 
                 {/* AI Summary Card */}
 
-                <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-slate-800/60 border border-indigo-100 dark:border-slate-700/60 space-y-1">
+                <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 space-y-1">
                     <p className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">
                         ✨ AI Summary Overview
                     </p>
@@ -116,22 +127,58 @@ const AISummaryPanel = ({ chat }) => {
                     </p>
                 </div>
 
-                {/* Attachments */}
+                {/* Attachments & Media Gallery */}
 
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                            Attachments
-                        </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                            {attachmentCount === 0
-                                ? "No files attached"
-                                : `${attachmentCount} file${attachmentCount > 1 ? "s" : ""} uploaded`}
-                        </p>
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                Media & Attachments
+                            </p>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                                {attachmentCount === 0
+                                    ? "No files attached"
+                                    : `${attachmentCount} file${attachmentCount > 1 ? "s" : ""} shared`}
+                            </p>
+                        </div>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white px-2.5 py-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                            {attachmentCount}
+                        </span>
                     </div>
-                    <span className="text-lg font-bold text-slate-900 dark:text-white px-2.5 py-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
-                        {attachmentCount}
-                    </span>
+
+                    {mediaMessages.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                            {mediaMessages.slice(0, 6).map((item, idx) => {
+                                const url = item.media?.url || item.mediaUrl;
+                                const isImg = item.messageType === "image" || item.media?.mimeType?.startsWith("image/");
+                                const isVid = item.messageType === "video" || item.media?.mimeType?.startsWith("video/");
+                                return (
+                                    <a
+                                        key={item._id || idx}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="relative aspect-square rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 group flex items-center justify-center shadow-xs"
+                                        title={item.media?.fileName || item.fileName || "View Attachment"}
+                                    >
+                                        {isImg && (
+                                            <img
+                                                src={url}
+                                                alt="Thumb"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition"
+                                            />
+                                        )}
+                                        {isVid && (
+                                            <div className="text-xl">🎥</div>
+                                        )}
+                                        {!isImg && !isVid && (
+                                            <div className="text-xl">📄</div>
+                                        )}
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
             </div>

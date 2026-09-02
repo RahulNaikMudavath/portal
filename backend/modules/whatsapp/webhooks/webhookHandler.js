@@ -54,6 +54,30 @@ const processMetaIncomingWebhook = async (body, io = null) => {
           // Parse Content & Media
           const parsed = parseMessageContent(msg);
 
+          // Download & Store Media into Cloudinary if message contains media
+          if (parsed.media && parsed.media.metaMediaId) {
+            try {
+              const { fetchAndStoreMetaMedia } = require("../services/metaApiService");
+              const storedMedia = await fetchAndStoreMetaMedia(
+                parsed.media.metaMediaId,
+                parsed.messageType,
+                parsed.fileName
+              );
+              if (storedMedia && storedMedia.url) {
+                parsed.media.url = storedMedia.url;
+                parsed.mediaUrl = storedMedia.url;
+                if (storedMedia.mimeType) parsed.media.mimeType = storedMedia.mimeType;
+                if (storedMedia.fileSize) parsed.media.fileSize = storedMedia.fileSize;
+                if (storedMedia.fileName) {
+                  parsed.media.fileName = storedMedia.fileName;
+                  parsed.fileName = storedMedia.fileName;
+                }
+              }
+            } catch (mediaErr) {
+              console.error("[MetaWebhook] Failed to process media asset:", mediaErr);
+            }
+          }
+
           // Find or create parent Conversation
           const conversation = await findOrCreateConversation(from, name);
 
