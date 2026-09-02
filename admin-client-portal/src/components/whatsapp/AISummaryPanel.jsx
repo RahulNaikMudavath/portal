@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useWorkRequest } from "../../context/WorkRequestContext";
+import { getCustomerDisplayName } from "../../services/whatsappService";
 
 const AISummaryPanel = ({ chat }) => {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ const AISummaryPanel = ({ chat }) => {
         ? chat.attachments.length
         : mediaMessages.length;
 
-    const customerName = chat.customerName?.trim() || "Unknown Customer";
+    const customerName = getCustomerDisplayName(chat);
 
     const priority =
         chat.ai?.priority ||

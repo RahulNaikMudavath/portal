@@ -19,7 +19,7 @@ const sendTextMessage = async (to, text, io = null, senderUserId = null) => {
   const { metaMessageId, metaResponseData } = await sendMetaTextMessage(cleanTo, text);
 
   // Find or create parent conversation
-  const conversation = await findOrCreateConversation(cleanTo, "Customer");
+  const conversation = await findOrCreateConversation(cleanTo, null);
 
   // Save outgoing message to DB
   const createdMessage = await WhatsappMessage.create({
@@ -70,7 +70,7 @@ const sendMediaMessage = async (to, mediaUrl, mediaType = "image", caption = "",
   const { metaMessageId, metaResponseData } = await sendMetaMediaMessage(cleanTo, mediaUrl, mediaType, caption, fileName);
 
   // Find or create parent conversation
-  const conversation = await findOrCreateConversation(cleanTo, "Customer");
+  const conversation = await findOrCreateConversation(cleanTo, null);
 
   const previewText = caption || (mediaType === "image" ? "[Image]" : mediaType === "video" ? "[Video]" : mediaType === "audio" ? "[Audio]" : `[Document: ${fileName || "File"}]`);
 

@@ -32,6 +32,31 @@ const getConversations = async (req, res) => {
           const chatObj = conv.toObject();
           chatObj.messages = messages;
 
+          // Auto-resolve real sender name from incoming messages or linked user
+          const realNameMsg = messages.find(
+            (m) =>
+              m.direction === "incoming" &&
+              m.customerName &&
+              m.customerName !== "Customer" &&
+              m.customerName !== "Unknown Customer"
+          );
+
+          if (realNameMsg?.customerName) {
+            if (
+              !chatObj.customerName ||
+              chatObj.customerName === "Customer" ||
+              chatObj.customerName === "Unknown Customer"
+            ) {
+              chatObj.customerName = realNameMsg.customerName;
+              WhatsAppConversation.updateOne(
+                { _id: conv._id },
+                { $set: { customerName: realNameMsg.customerName } }
+              ).catch(() => {});
+            }
+          } else if (conv.user?.name) {
+            chatObj.customerName = conv.user.name;
+          }
+
           try {
             chatObj.ai = await analyzeConversation(messages);
           } catch (aiErr) {
@@ -54,13 +79,27 @@ const getConversations = async (req, res) => {
         grouped[msg.conversationId] = {
           _id: msg.conversationId,
           conversationId: msg.conversationId,
-          customerName: msg.customerName,
+          customerName:
+            msg.customerName &&
+            msg.customerName !== "Customer" &&
+            msg.customerName !== "Unknown Customer"
+              ? msg.customerName
+              : "Customer",
           phoneNumber: msg.phoneNumber,
           lastMessage: "",
           lastTime: "",
           unread: 0,
           messages: []
         };
+      }
+
+      if (
+        msg.direction === "incoming" &&
+        msg.customerName &&
+        msg.customerName !== "Customer" &&
+        msg.customerName !== "Unknown Customer"
+      ) {
+        grouped[msg.conversationId].customerName = msg.customerName;
       }
 
       grouped[msg.conversationId].messages.push(msg);

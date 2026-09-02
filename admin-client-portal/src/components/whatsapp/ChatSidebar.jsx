@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ChatCard from "./ChatCard";
+import { getCustomerDisplayName } from "../../services/whatsappService";
 
 const ChatSidebar = ({ chats = [], selected, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -7,9 +8,9 @@ const ChatSidebar = ({ chats = [], selected, onSelect }) => {
   const filteredChats = chats.filter((chat) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
-    const name = (chat.customerName || "").toLowerCase();
+    const displayName = getCustomerDisplayName(chat).toLowerCase();
     const phone = (chat.phoneNumber || "").toLowerCase();
-    return name.includes(query) || phone.includes(query);
+    return displayName.includes(query) || phone.includes(query);
   });
 
   return (

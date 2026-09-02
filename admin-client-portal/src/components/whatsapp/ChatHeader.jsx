@@ -1,5 +1,9 @@
+import { getCustomerDisplayName } from "../../services/whatsappService";
+
 const ChatHeader = ({ chat }) => {
   if (!chat) return null;
+
+  const displayName = getCustomerDisplayName(chat);
 
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
@@ -8,16 +12,16 @@ const ChatHeader = ({ chat }) => {
 
         <img
           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-            chat.customerName || "Customer"
+            displayName
           )}&background=4f46e5&color=fff`}
-          alt={chat.customerName}
+          alt={displayName}
           className="w-11 h-11 rounded-full shadow-sm"
         />
 
         <div>
 
           <h2 className="text-base font-bold text-slate-900 dark:text-white">
-            {chat.customerName || "Customer"}
+            {displayName}
           </h2>
 
           <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-0.5">

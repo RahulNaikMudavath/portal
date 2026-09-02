@@ -32,10 +32,15 @@ const findOrCreateConversation = async (rawPhone, customerName) => {
   }
 
   if (!conversation) {
+    const initialName =
+      (customerName && customerName !== "Customer" && customerName !== "Unknown Customer")
+        ? customerName
+        : "Customer";
+
     conversation = await WhatsAppConversation.create({
       conversationId: convId,
       phoneNumber: cleanPhone || rawPhone,
-      customerName: customerName || "Unknown Customer",
+      customerName: initialName,
       user: linkedUserId,
       status: "open",
       unreadCount: 0,
@@ -49,7 +54,13 @@ const findOrCreateConversation = async (rawPhone, customerName) => {
       conversation.user = linkedUserId;
       needsSave = true;
     }
-    if (customerName && customerName !== "Unknown Customer" && conversation.customerName !== customerName) {
+    // Only update customerName if new name is a real, non-generic name
+    if (
+      customerName &&
+      customerName !== "Customer" &&
+      customerName !== "Unknown Customer" &&
+      conversation.customerName !== customerName
+    ) {
       conversation.customerName = customerName;
       needsSave = true;
     }

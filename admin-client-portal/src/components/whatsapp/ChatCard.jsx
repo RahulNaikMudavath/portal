@@ -1,6 +1,9 @@
+import { getCustomerDisplayName } from "../../services/whatsappService";
+
 const ChatCard = ({ chat, selected, onSelect }) => {
   const isSelected = selected?._id === chat._id || (selected?.conversationId && selected?.conversationId === chat.conversationId);
   const unread = chat.unreadCount || chat.unread || 0;
+  const displayName = getCustomerDisplayName(chat);
 
   const rawTime = chat.lastMessageAt || chat.lastTime || chat.updatedAt;
   const timeFormatted = rawTime
@@ -58,16 +61,16 @@ const ChatCard = ({ chat, selected, onSelect }) => {
       <div className="flex items-center gap-3">
         <img
           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-            chat.customerName || "Customer"
+            displayName
           )}&background=4f46e5&color=fff`}
-          alt={chat.customerName}
+          alt={displayName}
           className="w-11 h-11 rounded-full shadow-sm flex-shrink-0"
         />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-1">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-              {chat.customerName || "Customer"}
+              {displayName}
             </h3>
 
             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 flex-shrink-0">
