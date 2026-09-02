@@ -86,6 +86,7 @@ function WhatsAppInbox() {
             await loadChats();
         } catch (err) {
             console.error("Failed to send WhatsApp message:", err);
+            throw err;
         }
     };
 
