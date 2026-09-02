@@ -107,9 +107,9 @@ function WhatsAppInbox() {
     };
 
     return (
-        <AdminLayout>
-            <div className="flex flex-col h-[calc(100vh-5.5rem)] overflow-hidden">
-                <div className="mb-3 flex-shrink-0">
+        <AdminLayout noScroll={true}>
+            <div className="flex flex-col h-full overflow-hidden">
+                <div className="mb-2.5 flex-shrink-0">
                     <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                         📥 Work Inbox & WhatsApp Control Center
                     </h1>
@@ -118,8 +118,9 @@ function WhatsAppInbox() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-12 flex-1 min-h-0 gap-4 overflow-hidden">
-                    <div className="col-span-12 lg:col-span-3 h-full overflow-hidden">
+                <div className="grid grid-cols-12 flex-1 min-h-0 gap-3.5 h-full overflow-hidden">
+                    {/* Left Conversations Sidebar */}
+                    <div className="col-span-4 xl:col-span-3 h-full overflow-hidden flex flex-col min-w-0">
                         <ChatSidebar
                             chats={chats}
                             selected={selectedChat}
@@ -127,7 +128,8 @@ function WhatsAppInbox() {
                         />
                     </div>
 
-                    <div className="col-span-12 lg:col-span-6 h-full overflow-hidden">
+                    {/* Middle Chat Window (Stationary Header/Footer, scrollable messages) */}
+                    <div className="col-span-8 xl:col-span-6 h-full overflow-hidden flex flex-col min-w-0">
                         <ChatWindow
                             chat={selectedChat}
                             onSendMessage={handleSendMessage}
@@ -135,7 +137,8 @@ function WhatsAppInbox() {
                         />
                     </div>
 
-                    <div className="col-span-12 lg:col-span-3 h-full overflow-hidden">
+                    {/* Right AI Assistant Panel */}
+                    <div className="hidden xl:flex xl:col-span-3 h-full overflow-hidden flex-col min-w-0">
                         <AISummaryPanel
                             chat={selectedChat}
                         />
