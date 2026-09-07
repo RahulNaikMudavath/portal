@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import InspectionReportModal from "../common/InspectionReportModal";
+import QuotationModal from "../common/QuotationModal";
 
 const getDeadlineInfo = (deadline, currentTime) => {
   if (!deadline) return null;
@@ -75,6 +76,7 @@ export default function TaskHeader({ task }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
 
   const status = getNormalizedStatus(task?.status);
 
@@ -147,14 +149,23 @@ export default function TaskHeader({ task }) {
           </div>
 
           {/* Action buttons & Status Badge right top */}
-          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <button
+              onClick={() => setShowQuoteModal(true)}
+              className="py-2 px-3 rounded-xl bg-slate-850 hover:bg-slate-750 border border-slate-700 text-indigo-400 hover:text-indigo-300 font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Generate BOQ Cost Estimation & WhatsApp Quote"
+            >
+              <span>💰</span>
+              <span className="hidden sm:inline">Quotation / BOQ</span>
+            </button>
+
             <button
               onClick={() => setShowReportModal(true)}
-              className="py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer shadow-sm"
+              className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer shadow-sm"
               title="Generate printable PDF report or WhatsApp summary"
             >
               <span>📄</span>
-              <span>Export Report</span>
+              <span>Report</span>
             </button>
 
             <div className="text-right hidden md:block pl-2 border-l border-slate-800">
@@ -245,6 +256,13 @@ export default function TaskHeader({ task }) {
       isOpen={showReportModal}
       onClose={() => setShowReportModal(false)}
     />
+
+    <QuotationModal
+      task={task}
+      isOpen={showQuoteModal}
+      onClose={() => setShowQuoteModal(false)}
+    />
   </>
   );
 }
+
