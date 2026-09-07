@@ -257,31 +257,39 @@ function Login() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1.5">
+                <label
+                  htmlFor="login-email-input"
+                  className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1.5"
+                >
                   Email Address
                 </label>
                 <input
+                  id="login-email-input"
                   type="email"
                   name="email"
                   placeholder="e.g. name@company.com"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1.5">
+                <label
+                  htmlFor="login-password-input"
+                  className="block text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1.5"
+                >
                   Password
                 </label>
                 <input
+                  id="login-password-input"
                   type="password"
                   name="password"
                   placeholder="••••••••"
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full bg-slate-955 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500/50"
+                  className="w-full bg-slate-955 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                   required
                 />
               </div>
@@ -289,7 +297,7 @@ function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs uppercase tracking-wider py-4 px-4 rounded-xl transition duration-200 active:scale-95 shadow-md shadow-indigo-600/10 cursor-pointer"
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs uppercase tracking-wider py-4 px-4 rounded-xl transition duration-200 active:scale-95 shadow-md shadow-indigo-600/10 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
               >
                 {loading ? "Authenticating..." : "🚪 Connect Portal"}
               </button>

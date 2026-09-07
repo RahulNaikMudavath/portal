@@ -38,6 +38,9 @@ function ReviewModal({ task, onClose, onReview }) {
   return (
     <div
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="review-modal-title"
       className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-opacity cursor-pointer"
     >
       <div
@@ -46,10 +49,13 @@ function ReviewModal({ task, onClose, onReview }) {
       >
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Review Task Submission</h2>
+            <h2 id="review-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white">
+              Review Task Submission
+            </h2>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              aria-label="Close review dialog"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none rounded-lg p-1"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
