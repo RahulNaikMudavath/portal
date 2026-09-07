@@ -7,6 +7,7 @@ import AISummaryPanel from "../../components/whatsapp/AISummaryPanel";
 
 import { getConversations, sendMessage as sendWhatsAppApi, sendMediaMessage as sendWhatsAppMediaApi } from "../../services/whatsappService";
 import socket from "../../socket";
+import { playMessageSound } from "../../utils/soundEffects";
 
 function WhatsAppInbox() {
     const [chats, setChats] = useState([]);
@@ -23,21 +24,10 @@ function WhatsAppInbox() {
             const data = await getConversations();
             setChats(data);
 
-            const currentSelected = selectedChatRef.current;
-            if (!currentSelected && data.length > 0) {
-                setSelectedChat(data[0]);
-                return;
-            }
-
-            if (currentSelected) {
-                const updatedChat = data.find(
-                    chat =>
-                        chat.conversationId === currentSelected.conversationId ||
-                        chat._id === currentSelected._id
-                );
-                if (updatedChat) {
-                    setSelectedChat(updatedChat);
-                }
+            // If we have a selected chat, refresh its reference with latest data
+            if (selectedChatRef.current) {
+                const refreshed = data.find(c => c._id === selectedChatRef.current._id);
+                if (refreshed) setSelectedChat(refreshed);
             }
         } catch (err) {
             console.error("Failed to load WhatsApp conversations:", err);
@@ -50,6 +40,7 @@ function WhatsAppInbox() {
         // ⚡ Socket.IO Real-time listeners (Webhook -> MongoDB -> Socket.IO -> Admin Inbox)
         const handleNewMessage = (msg) => {
             console.log("⚡ [Socket.IO] New WhatsApp message received:", msg);
+            playMessageSound();
             loadChats();
         };
 

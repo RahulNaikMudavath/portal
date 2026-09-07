@@ -6,6 +6,7 @@ import {
 import socket from "../../socket";
 import { Mic, Square, Send, Volume2 } from "lucide-react";
 import VoiceDictationButton from "../common/VoiceDictationButton";
+import { playMessageSound } from "../../utils/soundEffects";
 
 function TaskComments({ taskId }) {
   const [comments, setComments] = useState([]);
@@ -61,7 +62,7 @@ function TaskComments({ taskId }) {
         );
 
         if (alreadyExists) return currentComments;
-
+        playMessageSound();
         return [...currentComments, data.comment];
       });
     };

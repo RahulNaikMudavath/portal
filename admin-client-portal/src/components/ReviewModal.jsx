@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { reviewTask } from "../services/taskService";
 import InspectionReportModal from "./common/InspectionReportModal";
 import BeforeAfterSlider from "./common/BeforeAfterSlider";
+import { playSuccessSound } from "../utils/soundEffects";
 
 function ReviewModal({ task, onClose, onReview }) {
   const [reviewStatus, setReviewStatus] = useState("approved");
@@ -24,6 +25,9 @@ function ReviewModal({ task, onClose, onReview }) {
     setIsSubmitting(true);
     try {
       await reviewTask(task._id, reviewStatus, rating, reason);
+      if (reviewStatus === "approved") {
+        playSuccessSound();
+      }
       onReview(task._id, reviewStatus);
       onClose();
     } catch (error) {

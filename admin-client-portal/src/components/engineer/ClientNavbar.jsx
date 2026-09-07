@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import NotificationBell from "../NotificationBell";
 import { ThemeToggle } from "../ThemeToggle";
+import { SoundToggle } from "../SoundToggle";
 
 function ClientNavbar({ setOpen }) {
   const location = useLocation();
@@ -52,6 +53,7 @@ function ClientNavbar({ setOpen }) {
 
         {/* Right actions */}
         <div className="flex items-center gap-3">
+          <SoundToggle />
           <NotificationBell />
           <ThemeToggle />
 

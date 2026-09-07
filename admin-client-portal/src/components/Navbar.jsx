@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import { ThemeToggle } from "./ThemeToggle";
+import { SoundToggle } from "./SoundToggle";
 
 function Navbar({ setOpen }) {
   const navigate = useNavigate();
@@ -29,7 +30,8 @@ function Navbar({ setOpen }) {
         </button>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        <SoundToggle />
         <NotificationBell />
         <ThemeToggle />
         <button

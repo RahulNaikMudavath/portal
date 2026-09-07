@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { QrCode, Camera, ShieldCheck, X } from "lucide-react";
 import { updateVisitStatus, addTaskNote } from "../../services/taskService";
 import { isAppOnline, queueOfflineAction } from "../../utils/offlineSync";
+import { playCheckInSound } from "../../utils/soundEffects";
 
 export default function QrCodeScannerCard({ task, onRefresh }) {
   const [scanning, setScanning] = useState(false);
@@ -61,6 +62,7 @@ export default function QrCodeScannerCard({ task, onRefresh }) {
         queueOfflineAction("updateVisitStatus", task._id, { visitStatus: "reached-site", locationCoords });
         queueOfflineAction("addNote", task._id, { text: noteText });
         setVerifyStatus("success");
+        playCheckInSound();
         alert("Offline Check-In: QR verified locally! Queue updated.");
         if (onRefresh) onRefresh();
       } else {
@@ -68,6 +70,7 @@ export default function QrCodeScannerCard({ task, onRefresh }) {
         await updateVisitStatus(task._id, "reached-site", locationCoords);
         await addTaskNote(task._id, { text: noteText });
         setVerifyStatus("success");
+        playCheckInSound();
         if (onRefresh) onRefresh();
       }
     } catch (err) {

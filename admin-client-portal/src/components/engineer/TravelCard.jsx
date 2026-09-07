@@ -2,6 +2,7 @@ import { useState } from "react";
 import { updateVisitStatus } from "../../services/taskService";
 import { motion } from "framer-motion";
 import { isAppOnline, queueOfflineAction } from "../../utils/offlineSync";
+import { playCheckInSound } from "../../utils/soundEffects";
 
 export default function TravelCard({ task, onRefresh }) {
   const [updating, setUpdating] = useState(false);
@@ -60,10 +61,12 @@ export default function TravelCard({ task, onRefresh }) {
 
       if (!isAppOnline()) {
         queueOfflineAction("updateVisitStatus", task._id, { visitStatus: nextStatus, locationCoords });
+        playCheckInSound();
         alert("Field Mode Offline: Action queued locally!");
         if (onRefresh) onRefresh();
       } else {
         await updateVisitStatus(task._id, nextStatus, locationCoords);
+        playCheckInSound();
         if (onRefresh) onRefresh();
       }
     } catch (err) {
