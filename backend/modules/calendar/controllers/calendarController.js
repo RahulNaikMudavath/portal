@@ -119,7 +119,7 @@ const createEvent = async (req, res) => {
             message: `📅 Admin assigned new schedule: "${event.title}"`,
             actionBy: req.user.id
           });
-          io.emit("newNotification", notif);
+          io.to(engId.toString()).emit("newNotification", notif);
         } catch (e) {}
       });
     }
@@ -203,7 +203,7 @@ const updateEvent = async (req, res) => {
             message: `📅 Admin updated schedule: "${event.title}"`,
             actionBy: req.user.id
           });
-          io.emit("newNotification", notif);
+          io.to(engId.toString()).emit("newNotification", notif);
         } catch (e) {}
       });
     }
@@ -320,9 +320,54 @@ const generateIcsContent = (events) => {
   return ics.join("\r\n");
 };
 
+// Helper to authenticate request either by Bearer token or by query ?token=
+const authenticateIcsRequest = async (req) => {
+  const jwt = require("jsonwebtoken");
+  const User = require("../../../modules/users/models/User");
+  let token = null;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_jwt_secret");
+    return await User.findById(decoded.id).select("-password");
+  } catch (err) {
+    return null;
+  }
+};
+
 const exportIcsFeed = async (req, res) => {
   try {
-    const events = await CalendarEvent.find().sort({ start: 1 }).lean();
+    const user = await authenticateIcsRequest(req);
+    if (!user) {
+      return res.status(401).send("Unauthorized: Authentication token required for calendar subscription feed");
+    }
+
+    let query = {};
+    if (user.role === "admin") {
+      const org = user.organization || user.company || "";
+      if (org) {
+        const User = require("../../../modules/users/models/User");
+        const adminsInOrg = await User.find({
+          $or: [{ organization: org }, { company: org }]
+        }).distinct("_id");
+        if (adminsInOrg.length > 0) {
+          query = { createdBy: { $in: adminsInOrg } };
+        }
+      } else {
+        query = { createdBy: user.id };
+      }
+    } else {
+      query = { engineers: user.id };
+    }
+
+    const events = await CalendarEvent.find(query).sort({ start: 1 }).lean();
     const icsContent = generateIcsContent(events);
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
     res.setHeader("Content-Disposition", 'inline; filename="admin-portal-calendar.ics"');
@@ -335,11 +380,23 @@ const exportIcsFeed = async (req, res) => {
 
 const downloadSingleIcs = async (req, res) => {
   try {
+    const user = await authenticateIcsRequest(req);
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized: Authentication required to download event ICS" });
+    }
+
     const { id } = req.params;
     const event = await CalendarEvent.findById(id).lean();
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
+
+    // Role check: Admin or assigned engineer only
+    const isAssigned = (event.engineers || []).some(engId => engId.toString() === user.id);
+    if (user.role !== "admin" && !isAssigned && event.createdBy.toString() !== user.id) {
+      return res.status(403).json({ message: "Forbidden: Not authorized to export this event" });
+    }
+
     const icsContent = generateIcsContent([event]);
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="event-${id}.ics"`);

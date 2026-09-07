@@ -85,7 +85,7 @@ export default function TaskCard({ task, isActive, onClick }) {
 
         {/* Footer date metadata */}
         <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-800/60">
-          <span>Created {new Date(task?.createdAt).toLocaleDateString("en-IN")}</span>
+          <span>Created {task?.createdAt ? new Date(task.createdAt).toLocaleDateString("en-IN") : "Recently"}</span>
           {task?.deadline && (
             <span className="text-yellow-500/80">
               Due {new Date(task.deadline).toLocaleDateString("en-IN")}

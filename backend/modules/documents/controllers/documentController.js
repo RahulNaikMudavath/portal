@@ -107,6 +107,10 @@ exports.togglePin = async (req, res) => {
       return res.status(404).json({ message: "Document not found" });
     }
 
+    if (req.user.role !== "admin" && document.uploadedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to pin/unpin this document" });
+    }
+
     document.pinned = !document.pinned;
     document.activityLog.push({
       action: document.pinned ? "Document Pinned" : "Document Unpinned",
@@ -132,7 +136,15 @@ exports.uploadNewVersion = async (req, res) => {
       return res.status(404).json({ message: "Document not found" });
     }
 
-    const fileUrl = req.file.path; // S3 ready
+    const isAuthorized = req.user.role === "admin" ||
+      document.uploadedBy.toString() === req.user.id ||
+      (document.engineer && document.engineer.toString() === req.user.id);
+
+    if (!isAuthorized) {
+      return res.status(403).json({ message: "Not authorized to upload a new version for this document" });
+    }
+
+    const fileUrl = req.file.path; // S3 / Cloudinary ready
     const newVersionNumber = document.versions.length + 1;
 
     document.url = fileUrl;

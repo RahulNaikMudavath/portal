@@ -118,6 +118,49 @@ const getConversations = async (req, res) => {
   }
 };
 
+const crypto = require("crypto");
+
+/**
+ * Verify Meta HMAC SHA256 Signature from X-Hub-Signature-256 header
+ */
+const verifyMetaSignature = (req) => {
+  const appSecret = process.env.WHATSAPP_APP_SECRET || process.env.META_APP_SECRET;
+  if (!appSecret) {
+    // If not configured, allow processing (backward compatible for local dev/testing)
+    return true;
+  }
+
+  const signature = req.headers["x-hub-signature-256"];
+  if (!signature) {
+    console.warn("[MetaWebhook] Missing X-Hub-Signature-256 header");
+    return false;
+  }
+
+  const parts = signature.split("=");
+  if (parts.length !== 2 || parts[0] !== "sha256") {
+    console.warn("[MetaWebhook] Invalid X-Hub-Signature-256 format");
+    return false;
+  }
+
+  const signatureHash = parts[1];
+  const payload = req.rawBody || JSON.stringify(req.body);
+
+  try {
+    const expectedHash = crypto
+      .createHmac("sha256", appSecret)
+      .update(payload, "utf8")
+      .digest("hex");
+
+    return crypto.timingSafeEqual(
+      Buffer.from(signatureHash, "utf8"),
+      Buffer.from(expectedHash, "utf8")
+    );
+  } catch (err) {
+    console.error("[MetaWebhook] Error verifying signature:", err);
+    return false;
+  }
+};
+
 /**
  * 🌐 Meta WhatsApp Cloud API Verification (GET /api/whatsapp/webhook)
  */
@@ -140,6 +183,12 @@ const metaVerifyWebhook = (req, res) => {
 
 const metaReceiveWebhook = async (req, res) => {
     try {
+      // Validate Meta signature if APP_SECRET is configured
+      if (!verifyMetaSignature(req)) {
+        console.warn("[MetaWebhook] Unauthorized webhook signature. Dropping request.");
+        return res.status(403).json({ error: "Invalid webhook signature" });
+      }
+
       const io = req.app.get("io");
       const body = req.body;
 

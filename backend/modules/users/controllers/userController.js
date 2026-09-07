@@ -94,6 +94,14 @@ exports.markNotificationAsRead = async (req, res) => {
       return res.status(404).json({ message: "Notification not found" });
     }
 
+    if (
+      notification.userId &&
+      notification.userId.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({ message: "Not authorized to update this notification" });
+    }
+
     notification.read = true;
     await notification.save();
 

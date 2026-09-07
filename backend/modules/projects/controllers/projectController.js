@@ -73,12 +73,15 @@ exports.addTaskToProject = async (req, res) => {
 // Add Document Upload to Project
 exports.addProjectDocument = async (req, res) => {
   try {
-    const project = await projectService.addDocuments(req.params.id, req.files, req.user.id);
+    const project = await projectService.addDocuments(req.params.id, req.files, req.user);
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
     res.json(project);
   } catch (error) {
+    if (error.message.includes("Not authorized")) {
+      return res.status(403).json({ message: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 };
@@ -86,12 +89,15 @@ exports.addProjectDocument = async (req, res) => {
 // Add Photo to Project Gallery
 exports.addProjectPhoto = async (req, res) => {
   try {
-    const project = await projectService.addPhotos(req.params.id, req.files, req.body.stage, req.user.id);
+    const project = await projectService.addPhotos(req.params.id, req.files, req.body.stage, req.user);
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
     res.json(project);
   } catch (error) {
+    if (error.message.includes("Not authorized")) {
+      return res.status(403).json({ message: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 };

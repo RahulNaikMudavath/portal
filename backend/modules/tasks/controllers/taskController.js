@@ -223,9 +223,11 @@ exports.createTask = async (req, res) => {
       actionBy: req.user.id
     });
 
-    // 🔔 Real-time socket event
-    io.emit("newNotification", notification);
-    io.emit("taskDashboardUpdate", { taskId: task._id });
+    // 🔔 Real-time socket event (scoped to assigned user)
+    if (io) {
+      io.to(assignedTo.toString()).emit("newNotification", notification);
+      io.emit("taskDashboardUpdate", { taskId: task._id });
+    }
 
     res.status(201).json(task);
 
@@ -358,9 +360,11 @@ if (task.startedAt) {
       actionBy: req.user.id
     });
 
-    // 🔔 Real-time socket event
-    io.emit("newNotification", notification);
-    io.emit("taskDashboardUpdate", { taskId: task._id });
+    // 🔔 Real-time socket event (scoped to creator)
+    if (io) {
+      io.to(task.createdBy.toString()).emit("newNotification", notification);
+      io.emit("taskDashboardUpdate", { taskId: task._id });
+    }
 
     res.json({
       message: "Work submitted successfully",
@@ -436,9 +440,23 @@ exports.updateTask = async (req, res) => {
       return res.status(403).json({ message: "Admin only" });
     }
 
+    const allowedUpdates = [
+      "title", "description", "assignedTo", "priority", "deadline",
+      "taskCategory", "workMode", "visitStatus", "customerName",
+      "phoneNumber", "projectType", "estimatedBudget", "siteAddress",
+      "locationCoords", "siteManager", "accessHours", "status"
+    ];
+
+    const updateData = {};
+    allowedUpdates.forEach((key) => {
+      if (req.body[key] !== undefined) {
+        updateData[key] = req.body[key];
+      }
+    });
+
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
 
@@ -543,9 +561,11 @@ exports.reviewTask = async (req, res) => {
       actionBy: req.user.id
     });
 
-    // 🔔 Real-time socket event
-    io.emit("newNotification", notification);
-    io.emit("taskDashboardUpdate", { taskId: task._id });
+    // 🔔 Real-time socket event (scoped to assigned client)
+    if (io) {
+      io.to(task.assignedTo.toString()).emit("newNotification", notification);
+      io.emit("taskDashboardUpdate", { taskId: task._id });
+    }
 
     res.json({
       message: `Task ${status}`,
@@ -728,6 +748,10 @@ const addMaterial = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
+    if (req.user.role !== "admin" && (!task.assignedTo || task.assignedTo.toString() !== req.user.id)) {
+      return res.status(403).json({ message: "Not authorized to modify materials for this task" });
+    }
+
     task.materials.push({ name, qty, unit, remarks });
 
     task.activityLog.push({
@@ -751,6 +775,10 @@ const addTaskNote = async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (req.user.role !== "admin" && (!task.assignedTo || task.assignedTo.toString() !== req.user.id)) {
+      return res.status(403).json({ message: "Not authorized to add notes to this task" });
     }
 
     task.notes.push({
@@ -835,6 +863,10 @@ const submitCustomerSignOff = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
+    if (req.user.role !== "admin" && (!task.assignedTo || task.assignedTo.toString() !== req.user.id)) {
+      return res.status(403).json({ message: "Not authorized to submit customer sign-off for this task" });
+    }
+
     task.customerSignName = name;
     task.customerSignPhone = phone;
     task.customerSignRemarks = remarks;
@@ -863,6 +895,10 @@ const deleteTaskAttachment = async (req, res) => {
     const task = await Task.findById(id);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (req.user.role !== "admin" && (!task.assignedTo || task.assignedTo.toString() !== req.user.id)) {
+      return res.status(403).json({ message: "Not authorized to remove media from this task" });
     }
 
     if (task.files && fileUrl) {

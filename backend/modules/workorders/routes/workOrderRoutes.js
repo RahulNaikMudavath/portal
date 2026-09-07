@@ -1,5 +1,4 @@
 const express = require("express");
-
 const router = express.Router();
 
 const {
@@ -7,10 +6,8 @@ const {
 } = require("../controllers/workOrderController");
 
 const { protect } = require("../../../middleware/authMiddleware");
+const { isAdmin } = require("../../../middleware/roleMiddleware");
 
-// Temporary debug
-console.log("createWorkOrder:", createWorkOrder);
-console.log("protect:", protect);
+router.post("/", protect, isAdmin, createWorkOrder);
 
-router.post("/", protect, createWorkOrder);
 module.exports = router;

@@ -39,9 +39,10 @@ function App() {
         <WorkRequestProvider>
           <BrowserRouter>
           <Routes>
-          {/* Public routes */}
+          {/* Public & Auth routes */}
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
 
           {/* Admin routes */}
           <Route
@@ -124,14 +125,16 @@ function App() {
               </ProtectedRoute>
             }
           />
-<Route
-  path="/admin/work-inbox"
-  element={
-    <ProtectedRoute role="admin">
-      <WhatsAppInbox />
-    </ProtectedRoute>
-  }
-/>
+
+          <Route
+            path="/admin/work-inbox"
+            element={
+              <ProtectedRoute role="admin">
+                <WhatsAppInbox />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/admin/whatsapp"
             element={
@@ -140,10 +143,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-    path="*"
-    element={<Navigate to="/admin/dashboard" />}
-/>
 
           <Route
             path="/admin/activity"
@@ -154,7 +153,16 @@ function App() {
             }
           />
 
-          {/* Client routes */}
+          <Route
+            path="/admin/create-ai-request"
+            element={
+              <ProtectedRoute role="admin">
+                <CreateAIWorkRequest />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Client / Engineer routes */}
           <Route
             path="/client/dashboard"
             element={
@@ -217,18 +225,9 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-    path="/admin/create-ai-request"
-    element={
-        <ProtectedRoute role="admin">
-            <CreateAIWorkRequest />
-        </ProtectedRoute>
-    }
-/>
 
-          {/* Unknown route */}
-          <Route path="*" element={<Login />} />
-          <Route path="/complete-profile" element={<CompleteProfile />} />
+          {/* Catch-all fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </WorkRequestProvider>

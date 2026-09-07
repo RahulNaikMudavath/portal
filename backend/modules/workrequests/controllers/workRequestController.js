@@ -67,10 +67,10 @@ const convertToWorkOrder = async (req, res) => {
       actionBy: req.user.id
     });
 
-    // Socket notify
+    // Socket notify (scoped to assigned engineer)
     const io = req.app.get("io");
     if (io) {
-      io.emit("newNotification", notification);
+      io.to(assignedEngineer.toString()).emit("newNotification", notification);
       io.emit("workRequestAssigned", { workRequestId: request._id });
     }
 
@@ -178,6 +178,8 @@ const createWorkRequest = async (req, res) => {
 
       status:
         req.body.assignedEngineer ? "assigned" : "new",
+
+      createdBy: req.user ? req.user.id : null
     });
 
     // If an engineer was assigned during creation, create the corresponding Task document
@@ -215,10 +217,10 @@ const createWorkRequest = async (req, res) => {
         actionBy: req.user.id
       });
 
-      // Socket notify
+      // Socket notify (scoped to assigned engineer)
       const io = req.app.get("io");
       if (io) {
-        io.emit("newNotification", notification);
+        io.to(req.body.assignedEngineer.toString()).emit("newNotification", notification);
       }
     }
 
@@ -240,7 +242,15 @@ const createWorkRequest = async (req, res) => {
 const getAllWorkRequests = async (req, res) => {
   try {
     const org = req.user.organization || req.user.company || "";
-    let query = { createdBy: req.user.id };
+    let query = {
+      $or: [
+        { createdBy: req.user.id },
+        { createdBy: { $exists: false } },
+        { createdBy: null },
+        { source: "whatsapp" }
+      ]
+    };
+
     if (org) {
       const User = require("../../../modules/users/models/User");
       const adminsInOrg = await User.find({
@@ -250,7 +260,14 @@ const getAllWorkRequests = async (req, res) => {
         ]
       }).distinct("_id");
       if (adminsInOrg.length > 0) {
-        query = { createdBy: { $in: adminsInOrg } };
+        query = {
+          $or: [
+            { createdBy: { $in: adminsInOrg } },
+            { createdBy: { $exists: false } },
+            { createdBy: null },
+            { source: "whatsapp" }
+          ]
+        };
       }
     }
 

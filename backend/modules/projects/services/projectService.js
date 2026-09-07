@@ -128,9 +128,14 @@ const linkTask = async (projectId, taskId, userId) => {
   return project;
 };
 
-const addDocuments = async (projectId, files, userId) => {
+const addDocuments = async (projectId, files, user) => {
   const project = await Project.findById(projectId);
   if (!project) return null;
+
+  const isAssigned = user.role === "admin" || (project.engineers || []).some(e => e.toString() === user.id.toString());
+  if (!isAssigned) {
+    throw new Error("Not authorized to upload documents to this project");
+  }
 
   const docs = files?.map(file => ({
     name: file.originalname || file.path.split(/[\\/]/).pop(),
@@ -142,7 +147,7 @@ const addDocuments = async (projectId, files, userId) => {
   project.activityLog.push({
     action: "Documents Uploaded",
     icon: "📎",
-    user: userId,
+    user: user.id,
     remarks: `Uploaded ${docs.length} document(s)`
   });
 
@@ -150,9 +155,14 @@ const addDocuments = async (projectId, files, userId) => {
   return project;
 };
 
-const addPhotos = async (projectId, files, stage, userId) => {
+const addPhotos = async (projectId, files, stage, user) => {
   const project = await Project.findById(projectId);
   if (!project) return null;
+
+  const isAssigned = user.role === "admin" || (project.engineers || []).some(e => e.toString() === user.id.toString());
+  if (!isAssigned) {
+    throw new Error("Not authorized to upload photos to this project");
+  }
 
   const photos = files?.map(file => ({
     name: file.originalname || file.path.split(/[\\/]/).pop(),
@@ -165,7 +175,7 @@ const addPhotos = async (projectId, files, stage, userId) => {
   project.activityLog.push({
     action: "Photos Added to Gallery",
     icon: "📷",
-    user: userId,
+    user: user.id,
     remarks: `Added ${photos.length} image(s) to ${stage || "before"} gallery`
   });
 

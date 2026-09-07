@@ -2,24 +2,75 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const testRoutes = require("./modules/auth/routes/testRoutes");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { errorHandler } = require("./middleware/errorMiddleware");
 require("dotenv").config();
 
 const app = express();
 
+// Security Headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  })
+);
+
+// Allowed origins
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5001"
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS policy violation: Origin not allowed"));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+
+// Rate Limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many authentication attempts, please try again after 15 minutes" }
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // 1000 requests per 15 minutes for general API
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/signup", authLimiter);
+app.use("/api", apiLimiter);
+
+// Sanitized Request Logger
 app.use((req, res, next) => {
-    console.log("=================================");
-    console.log("METHOD:", req.method);
-    console.log("URL:", req.originalUrl);
-    console.log("HEADERS:", req.headers);
-    next();
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[${req.method}] ${req.originalUrl}`);
+  }
+  next();
 });
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
+    credentials: true
   }
 });
 
@@ -31,9 +82,7 @@ io.on("connection", (socket) => {
 
   socket.on("join_room", (userId) => {
     if (!userId) return;
-
     socket.join(userId.toString());
-
     console.log(`User joined room: ${userId}`);
   });
 
@@ -42,11 +91,15 @@ io.on("connection", (socket) => {
   });
 });
 
-app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-app.use("/api/test", testRoutes);
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    }
+  })
+);
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 app.get("/", (req, res) => {
   res.send("API Running");
@@ -66,7 +119,6 @@ const projectRoutes = require("./modules/projects/routes/projectRoutes");
 const documentRoutes = require("./modules/documents/routes/documentRoutes");
 const calendarRoutes = require("./modules/calendar/routes/calendarRoutes");
 
-
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/notifications", notificationRoutes);
@@ -79,8 +131,10 @@ app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/calendar", calendarRoutes);
-
 app.use("/api/auth", authRoutes);
+
+// Global Error Handler
+app.use(errorHandler);
 
 const connectDB = require("./config/db");
 connectDB();
@@ -88,4 +142,4 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); // nodemon trigger
+});

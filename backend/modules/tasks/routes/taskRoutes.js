@@ -105,15 +105,26 @@ router.delete("/:id", protect, isAdmin, deleteTask);
 router.get("/activities/recent", protect, isAdmin, getRecentActivities);
 
 
-// 📁 Get task files
+// 📁 Get task files (Admin or assigned client only)
 router.get("/:id/files", protect, async (req, res) => {
-  const task = await Task.findById(req.params.id);
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
-  res.json({
-    files: task.files,
-    submissionFiles: task.submissionFiles
-  });
+    const isAssigned = task.assignedTo && task.assignedTo.toString() === req.user.id;
+    if (req.user.role !== "admin" && !isAssigned) {
+      return res.status(403).json({ message: "Access denied: Not authorized to view files for this task" });
+    }
+
+    res.json({
+      files: task.files || [],
+      submissionFiles: task.submissionFiles || []
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
-
 
 module.exports = router;

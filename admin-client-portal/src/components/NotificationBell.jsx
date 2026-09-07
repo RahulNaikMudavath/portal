@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { getNotifications, markAsRead, markAllAsRead } from "../services/notificationService";
-import { io } from "socket.io-client";
 import socket from "../socket";
 
 function NotificationBell() {
@@ -13,8 +12,8 @@ function NotificationBell() {
   const fetchNotifications = async () => {
     try {
       const res = await getNotifications();
-      setNotifications(res.data);
-      const unread = res.data.filter((n) => !n.read).length;
+      setNotifications(res.data || []);
+      const unread = (res.data || []).filter((n) => !n.read).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
@@ -22,53 +21,48 @@ function NotificationBell() {
   };
 
   useEffect(() => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = user._id || user.id;
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user._id || user.id;
 
-  if (!userId) return;
+    if (!userId) return;
 
-  const joinUserRoom = () => {
-    socket.emit("join_room", userId);
-  };
+    const joinUserRoom = () => {
+      socket.emit("join_room", userId);
+    };
 
-  if (socket.connected) {
-    joinUserRoom();
-  }
+    if (socket.connected) {
+      joinUserRoom();
+    }
 
-  socket.on("connect", joinUserRoom);
+    socket.on("connect", joinUserRoom);
 
-  return () => {
-    socket.off("connect", joinUserRoom);
-  };
-}, []);
+    return () => {
+      socket.off("connect", joinUserRoom);
+    };
+  }, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const parsedUser = storedUser ? JSON.parse(storedUser) : null;
     const currentUserId = parsedUser?._id || parsedUser?.id || null;
 
-    const loadNotifications = async () => {
-      await fetchNotifications();
+    fetchNotifications();
+
+    const handleNewNotification = (notification) => {
+      if (notification && (!notification.userId || String(notification.userId) === String(currentUserId))) {
+        setNotifications((prev) => [notification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+        setArrivalMessage(notification.message || "New notification received");
+
+        window.clearTimeout(window.__notificationArrivalTimeout);
+        window.__notificationArrivalTimeout = window.setTimeout(() => {
+          setArrivalMessage("");
+        }, 3500);
+      }
     };
 
-    loadNotifications();
-
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5001");
-
-    socket.on("newNotification", (notification) => {
-      if (!currentUserId || String(notification.userId) !== String(currentUserId)) {
-        return;
-      }
-
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadCount((prev) => prev + 1);
-      setArrivalMessage(notification.message || "New notification received");
-
-      window.clearTimeout(window.__notificationArrivalTimeout);
-      window.__notificationArrivalTimeout = window.setTimeout(() => {
-        setArrivalMessage("");
-      }, 3500);
-    });
+    socket.on("newNotification", handleNewNotification);
+    socket.on("new_notification", handleNewNotification);
 
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -80,8 +74,8 @@ function NotificationBell() {
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      socket.off("newNotification");
-      socket.disconnect();
+      socket.off("newNotification", handleNewNotification);
+      socket.off("new_notification", handleNewNotification);
     };
   }, []);
 
