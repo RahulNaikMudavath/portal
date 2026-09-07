@@ -23,3 +23,13 @@ export const updateUserLocation = async (lat, lng, address = "") => {
   });
   return response.data;
 };
+
+export const createEngineer = async (engineerData) => {
+  const response = await API.post("/api/users", engineerData);
+  return response.data;
+};
+
+export const deleteUser = async (userId) => {
+  const response = await API.delete(`/api/users/${userId}`);
+  return response.data;
+};

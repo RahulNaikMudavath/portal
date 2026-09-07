@@ -291,3 +291,89 @@ exports.updateLocation = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// 👑 Admin -> Create a new user / engineer
+exports.createUser = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      role,
+      phone,
+      city,
+      department,
+      workMode,
+      engineerType,
+      jobTitle,
+      skills,
+      experience
+    } = req.body;
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ message: "Engineer full name is required" });
+    }
+
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({ message: "Email address is required" });
+    }
+
+    if (!password || typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: "A user with this email already exists" });
+    }
+
+    const bcrypt = require("bcrypt");
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    let parsedSkills = [];
+    if (skills) {
+      try {
+        parsedSkills = typeof skills === "string" ? JSON.parse(skills) : skills;
+      } catch (e) {
+        parsedSkills = String(skills).split(",").map(s => s.trim()).filter(Boolean);
+      }
+    }
+
+    const org = req.user.organization || req.user.company || "";
+
+    // Role defaults to client (engineer) unless specifically admin by existing admin
+    const targetRole = role === "admin" ? "admin" : "client";
+
+    const newUser = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: targetRole,
+      phone: phone || "",
+      city: city || "",
+      company: org,
+      organization: org,
+      department: department || "",
+      workMode: workMode || "field",
+      engineerType: engineerType || (workMode === "office" ? "office" : "field"),
+      jobTitle: jobTitle || "Field Engineer",
+      skills: parsedSkills,
+      experience: Number(experience) || 0,
+      createdBy: req.user.id,
+      emailVerified: true
+    });
+
+    const userObj = newUser.toObject();
+    delete userObj.password;
+
+    res.status(201).json({
+      message: `Account created successfully for ${newUser.name}`,
+      user: userObj
+    });
+  } catch (error) {
+    console.error("Create user error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};

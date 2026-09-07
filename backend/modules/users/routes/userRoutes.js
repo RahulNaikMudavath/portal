@@ -14,7 +14,8 @@ const {
   getProfile,
   updateProfile,
   deleteUser,
-  updateLocation
+  updateLocation,
+  createUser
 } = require("../controllers/userController");
 
 const upload = require("../../../middleware/uploadMiddleware");
@@ -24,8 +25,9 @@ router.get("/profile", protect, getProfile);
 router.put("/profile", protect, upload.single("photo"), updateProfile);
 router.put("/location", protect, updateLocation);
 
-// 👑 Admin → get all users
+// 👑 Admin → get all users & create new engineer/user
 router.get("/", protect, isAdmin, getAllUsers);
+router.post("/", protect, isAdmin, createUser);
 
 // 👑 Admin → delete user (revoke access)
 router.delete("/:id", protect, isAdmin, deleteUser);

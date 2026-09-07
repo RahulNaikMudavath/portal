@@ -184,36 +184,23 @@ function Login() {
             </div>
           </div>
 
-          {/* Quick Prefill Account Helper */}
+          {/* Enterprise Features List */}
           <div className="space-y-3 bg-slate-950/40 border border-slate-850 p-4 rounded-2xl">
-            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-wider">Demo Accounts</span>
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
-              <button
-                type="button"
-                onClick={() => handlePrefill("admin")}
-                className={`py-2 px-3 rounded-lg border transition text-center ${
-                  selectedRole === "admin"
-                    ? "bg-indigo-600 border-indigo-500 text-white"
-                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                }`}
-              >
-                👑 Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePrefill("client")}
-                className={`py-2 px-3 rounded-lg border transition text-center ${
-                  selectedRole === "client"
-                    ? "bg-indigo-600 border-indigo-500 text-white"
-                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                }`}
-              >
-                👷 Engineer
-              </button>
+            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-wider">Enterprise Console</span>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center gap-2.5 text-slate-300">
+                <span className="text-indigo-400 text-sm">🛡️</span>
+                <span className="text-[11px] font-medium">Role-Isolated Dashboards</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-300">
+                <span className="text-emerald-400 text-sm">📍</span>
+                <span className="text-[11px] font-medium">Live GPS Site Check-ins</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-slate-300">
+                <span className="text-amber-400 text-sm">⚡</span>
+                <span className="text-[11px] font-medium">Real-Time Dispatch Sync</span>
+              </div>
             </div>
-            <p className="text-[9px] text-slate-500 text-center leading-normal">
-              Click to autofill mock local login accounts.
-            </p>
           </div>
 
           <div className="text-[10px] text-slate-500 border-t border-slate-850 pt-4">
@@ -309,11 +296,8 @@ function Login() {
             </form>
 
             <div className="pt-2 text-center text-xs">
-              <p className="text-slate-450">
-                New on the platform?{" "}
-                <Link to="/signup" className="text-indigo-400 font-bold hover:underline">
-                  Create Account
-                </Link>
+              <p className="text-slate-450 text-[11px] leading-relaxed">
+                🔐 Accounts are provisioned directly by your administrator. Contact your organization lead for credentials.
               </p>
             </div>
           </div>

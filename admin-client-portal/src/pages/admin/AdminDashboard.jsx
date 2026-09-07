@@ -8,6 +8,7 @@ import AiAnalyticsView from "../../components/analytics/AiAnalyticsView";
 import AttentionCenter from "../../components/dashboard/AttentionCenter";
 import { getClients } from "../../services/userService";
 import socket from "../../socket";
+import AddEngineerModal from "../../components/admin/AddEngineerModal";
 
 function AdminDashboard() {
   const [tasks, setTasks] = useState([]);
@@ -16,6 +17,7 @@ function AdminDashboard() {
   const [clientsLoading, setClientsLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showAddEngineerModal, setShowAddEngineerModal] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -285,9 +287,16 @@ function AdminDashboard() {
 
                     <button
                       onClick={handleSearch}
-                      className="rounded-2xl bg-indigo-600 px-6 py-3 font-bold text-xs uppercase tracking-wider text-white transition hover:bg-indigo-700 shadow-md cursor-pointer"
+                      className="rounded-2xl bg-slate-800 hover:bg-slate-700 px-5 py-3 font-bold text-xs uppercase tracking-wider text-white transition shadow-md cursor-pointer"
                     >
                       Search
+                    </button>
+
+                    <button
+                      onClick={() => setShowAddEngineerModal(true)}
+                      className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-5 py-3 font-bold text-xs uppercase tracking-wider text-white transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    >
+                      <span>➕ Add Engineer</span>
                     </button>
                   </div>
                 </div>
@@ -383,6 +392,12 @@ function AdminDashboard() {
           onReview={handleReviewTask}
         />
       )}
+
+      <AddEngineerModal
+        isOpen={showAddEngineerModal}
+        onClose={() => setShowAddEngineerModal(false)}
+        onSuccess={fetchDashboardData}
+      />
     </>
   );
 }

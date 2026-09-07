@@ -282,16 +282,15 @@ function Signup() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-455 mb-1">Role Type *</label>
-                <select
-                  name="role"
-                  value={form.role}
+                <label className="block font-semibold text-slate-455 mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  name="phone"
+                  placeholder="e.g. +91 9876543210"
+                  value={form.phone}
                   onChange={handleChange}
-                  className="w-full bg-slate-955 border border-slate-850 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500/50"
-                >
-                  <option value="client">👨‍💼 Client / Engineer</option>
-                  <option value="admin">👑 Portal Administrator</option>
-                </select>
+                  className="w-full bg-slate-955 border border-slate-850 rounded-xl p-3 text-white placeholder-slate-650 focus:outline-none focus:border-indigo-500/50"
+                />
               </div>
             </div>
 
