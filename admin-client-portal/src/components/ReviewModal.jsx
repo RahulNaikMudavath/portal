@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { reviewTask } from "../services/taskService";
+import InspectionReportModal from "./common/InspectionReportModal";
 
 function ReviewModal({ task, onClose, onReview }) {
   const [reviewStatus, setReviewStatus] = useState("approved");
   const [rating, setRating] = useState(5);
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -36,33 +38,47 @@ function ReviewModal({ task, onClose, onReview }) {
   };
 
   return (
-    <div
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="review-modal-title"
-      className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-opacity cursor-pointer"
-    >
+    <>
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl cursor-default"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-modal-title"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-opacity cursor-pointer"
       >
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between">
-            <h2 id="review-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white">
-              Review Task Submission
-            </h2>
-            <button
-              onClick={onClose}
-              aria-label="Close review dialog"
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none rounded-lg p-1"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl cursor-default"
+        >
+          <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 id="review-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white">
+                  Review Task Submission
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Evaluate quality & client sign-off</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReport(true)}
+                  className="py-1.5 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>📄</span>
+                  <span>Inspection Report</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  aria-label="Close review dialog"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none rounded-lg p-1 cursor-pointer"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
         <div className="p-6 space-y-6">
           <div>
@@ -201,6 +217,13 @@ function ReviewModal({ task, onClose, onReview }) {
         </div>
       </div>
     </div>
+
+    <InspectionReportModal
+      task={task}
+      isOpen={showReport}
+      onClose={() => setShowReport(false)}
+    />
+  </>
   );
 }
 

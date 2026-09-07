@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import InspectionReportModal from "../common/InspectionReportModal";
 
 const getDeadlineInfo = (deadline, currentTime) => {
   if (!deadline) return null;
@@ -73,6 +74,7 @@ const getNormalizedStatus = (dbStatus) => {
 export default function TaskHeader({ task }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const status = getNormalizedStatus(task?.status);
 
@@ -111,46 +113,58 @@ export default function TaskHeader({ task }) {
   const deadlineDate = task?.deadline ? new Date(task.deadline).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "N/A";
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 md:p-8 shadow-md space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        {/* Info badges and Title */}
-        <div className="space-y-2.5">
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${getPriorityStyle(priority)}`}>
-              {priority}
-            </span>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${getStatusStyle(status)}`}>
-              {status}
-            </span>
-            {task?.reviewStatus && (
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                task.reviewStatus === "approved"
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : task.reviewStatus === "rejected"
-                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                  : "bg-slate-800 text-slate-400 border border-slate-700"
-              }`}>
-                Review: {task.reviewStatus}
+    <>
+      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 md:p-8 shadow-md space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          {/* Info badges and Title */}
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${getPriorityStyle(priority)}`}>
+                {priority}
               </span>
-            )}
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${task?.taskCategory === "field" ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400"}`}>
-              {task?.taskCategory === "field" ? "👷 Field" : "📄 Office"}
-            </span>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${getStatusStyle(status)}`}>
+                {status}
+              </span>
+              {task?.reviewStatus && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                  task.reviewStatus === "approved"
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : task.reviewStatus === "rejected"
+                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                    : "bg-slate-800 text-slate-400 border border-slate-700"
+                }`}>
+                  Review: {task.reviewStatus}
+                </span>
+              )}
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${task?.taskCategory === "field" ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400"}`}>
+                {task?.taskCategory === "field" ? "👷 Field" : "📄 Office"}
+              </span>
+            </div>
+
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              {task?.title}
+            </h1>
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-            {task?.title}
-          </h1>
-        </div>
+          {/* Action buttons & Status Badge right top */}
+          <div className="flex items-center gap-3 self-start md:self-auto">
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer shadow-sm"
+              title="Generate printable PDF report or WhatsApp summary"
+            >
+              <span>📄</span>
+              <span>Export Report</span>
+            </button>
 
-        {/* Status Badge right top */}
-        <div className="text-right hidden md:block">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Category</p>
-          <p className="text-sm font-bold text-slate-200 mt-1 capitalize">
-            {task?.taskCategory} Workspace
-          </p>
+            <div className="text-right hidden md:block pl-2 border-l border-slate-800">
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Category</p>
+              <p className="text-sm font-bold text-slate-200 mt-0.5 capitalize">
+                {task?.taskCategory}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Grid Details Panel */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-800/80 text-xs">
@@ -225,5 +239,12 @@ export default function TaskHeader({ task }) {
         </div>
       )}
     </div>
+
+    <InspectionReportModal
+      task={task}
+      isOpen={showReportModal}
+      onClose={() => setShowReportModal(false)}
+    />
+  </>
   );
 }
