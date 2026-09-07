@@ -123,6 +123,18 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  mustChangePassword: {
+    type: Boolean,
+    default: false
+  },
+  failedLoginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: {
+    type: Date,
+    default: null
+  },
   currentLocation: {
     lat: { type: Number, default: null },
     lng: { type: Number, default: null },

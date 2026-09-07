@@ -94,11 +94,31 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Check account lockout
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      const remainingMinutes = Math.ceil((user.lockUntil - new Date()) / (60 * 1000));
+      return res.status(423).json({
+        message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${remainingMinutes} minute(s).`
+      });
+    }
+
     // compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // lock for 15 mins
+        user.failedLoginAttempts = 0;
+      }
+      await user.save();
       return res.status(400).json({ message: "Invalid credentials" });
     }
+
+    // Reset failed attempts & update lastLogin on success
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    user.lastLogin = new Date();
+    await user.save();
 
     // create token
     const token = jwt.sign(
@@ -116,6 +136,54 @@ exports.login = async (req, res) => {
       user: safeUser
     });
 
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 🔄 CHANGE / RESET PASSWORD
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // If currentPassword is provided, verify it
+    if (currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Incorrect current password" });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.mustChangePassword = false;
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || "default_jwt_secret",
+      { expiresIn: "7d" }
+    );
+
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
+    res.json({
+      message: "Password updated successfully",
+      token,
+      user: safeUser
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

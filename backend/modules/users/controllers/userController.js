@@ -362,7 +362,8 @@ exports.createUser = async (req, res) => {
       skills: parsedSkills,
       experience: Number(experience) || 0,
       createdBy: req.user.id,
-      emailVerified: true
+      emailVerified: true,
+      mustChangePassword: true
     });
 
     const userObj = newUser.toObject();

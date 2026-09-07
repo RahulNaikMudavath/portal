@@ -91,6 +91,9 @@ io.on("connection", (socket) => {
   });
 });
 
+const { sanitizeInput } = require("./middleware/sanitizeMiddleware");
+const mongoose = require("mongoose");
+
 app.use(
   express.json({
     limit: "10mb",
@@ -101,8 +104,25 @@ app.use(
 );
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+// NoSQL injection protection
+app.use(sanitizeInput);
+
 app.get("/", (req, res) => {
   res.send("API Running");
+});
+
+// Uptime & System Health Check
+app.get("/api/health", (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatus = { 0: "disconnected", 1: "connected", 2: "connecting", 3: "disconnecting" }[dbState] || "unknown";
+
+  res.status(dbState === 1 ? 200 : 503).json({
+    status: dbState === 1 ? "healthy" : "unhealthy",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    database: dbStatus,
+    version: "1.0.0"
+  });
 });
 
 const authRoutes = require("./modules/auth/routes/authRoutes");
