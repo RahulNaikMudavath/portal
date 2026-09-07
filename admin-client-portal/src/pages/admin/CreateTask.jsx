@@ -6,6 +6,7 @@ import { useWorkRequest } from "../../context/WorkRequestContext";
 
 import { getEngineers } from "../../services/userService";
 import { createTask } from "../../services/taskService";
+import useFormDraft from "../../hooks/useFormDraft";
 
 const initialForm = {
   customerName: "",
@@ -31,6 +32,9 @@ export default function CreateTask() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [selectedFiles, setSelectedFiles] = useState([]);
+
+  // Auto-save form draft to localStorage to prevent data loss on refresh/offline
+  const { isDraftSaved, clearDraft, hasRecoveredDraft } = useFormDraft("admin_create_task", form, setForm);
 
   const loadEngineers = async () => {
     try {
@@ -121,6 +125,7 @@ export default function CreateTask() {
 
       await createTask(formData);
 
+      clearDraft();
       alert("✅ Task Created Successfully!");
       setForm(initialForm);
       setSelectedFiles([]);
@@ -140,9 +145,18 @@ return (
   <AdminLayout>
     <div className="max-w-5xl mx-auto bg-slate-900 rounded-xl shadow-lg p-8">
 
-      <h1 className="text-3xl font-bold text-white mb-8">
-        📋 Create Work Request
-      </h1>
+      <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-800">
+        <h1 className="text-3xl font-bold text-white">
+          📋 Create Work Request
+        </h1>
+
+        {isDraftSaved && (
+          <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-xs animate-pulse">
+            <span>💾</span>
+            <span>{hasRecoveredDraft ? "Restored Draft" : "Draft Auto-Saved"}</span>
+          </span>
+        )}
+      </div>
 
       <form
         onSubmit={handleSubmit}

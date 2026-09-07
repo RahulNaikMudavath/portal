@@ -9,6 +9,7 @@ import Signup from "./pages/Signup";
 import CompleteProfile from "./pages/CompleteProfile";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import PageLoader from "./components/common/PageLoader";
+import OfflineStatusBar from "./components/common/OfflineStatusBar";
 
 // Lazy-loaded Admin pages
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
@@ -40,6 +41,7 @@ function App() {
       <ThemeProvider>
         <WorkRequestProvider>
           <BrowserRouter>
+            <OfflineStatusBar />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public & Auth routes */}
