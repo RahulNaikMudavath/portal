@@ -3,8 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>admin-client-portal</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#090d16" />
+    <meta name="description" content="ConstructAI — Enterprise Civil Engineering & GPS Field Operations Portal" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ConstructAI" />
+    <title>ConstructAI — Civil & Field Operations Portal</title>
     <script>
       (function() {
         const saved = localStorage.getItem("theme") || "system";
@@ -22,6 +28,20 @@
           document.documentElement.classList.remove("dark");
         }
       })();
+
+      // Register Service Worker for PWA and offline caching
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function() {
+          navigator.serviceWorker.register("/sw.js").then(
+            function(registration) {
+              console.log("[PWA] ServiceWorker registered with scope:", registration.scope);
+            },
+            function(err) {
+              console.warn("[PWA] ServiceWorker registration failed:", err);
+            }
+          );
+        });
+      }
     </script>
   </head>
   <body>

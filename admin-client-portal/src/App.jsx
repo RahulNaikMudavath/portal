@@ -10,6 +10,7 @@ import CompleteProfile from "./pages/CompleteProfile";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import PageLoader from "./components/common/PageLoader";
 import OfflineStatusBar from "./components/common/OfflineStatusBar";
+import PwaInstallPrompt from "./components/common/PwaInstallPrompt";
 
 // Lazy-loaded Admin pages
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
@@ -42,6 +43,7 @@ function App() {
         <WorkRequestProvider>
           <BrowserRouter>
             <OfflineStatusBar />
+            <PwaInstallPrompt />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public & Auth routes */}

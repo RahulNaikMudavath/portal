@@ -1,0 +1,19 @@
+{
+  "name": "ConstructAI — Civil & Field Operations Portal",
+  "short_name": "ConstructAI",
+  "description": "Enterprise construction management, GPS field inspection, and project operations portal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
