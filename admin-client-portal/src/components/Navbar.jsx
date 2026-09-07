@@ -16,7 +16,18 @@ function Navbar({ setOpen }) {
         ☰
       </button>
 
-      <h2 className="font-semibold text-[18px]">Admin Control Center</h2>
+      <div className="flex items-center gap-3">
+        <h2 className="font-semibold text-[18px] hidden md:block">Admin Control Center</h2>
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+          title="Open Spotlight Search (Ctrl+K)"
+        >
+          <span>🔍</span>
+          <span className="font-medium">Search tasks, pages...</span>
+          <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-750 font-mono text-[10px] text-slate-500 dark:text-slate-400 font-bold border border-slate-300 dark:border-slate-650">Ctrl K</kbd>
+        </button>
+      </div>
 
       <div className="flex items-center gap-4">
         <NotificationBell />
