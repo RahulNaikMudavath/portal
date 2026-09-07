@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { reviewTask } from "../services/taskService";
 import InspectionReportModal from "./common/InspectionReportModal";
+import BeforeAfterSlider from "./common/BeforeAfterSlider";
 
 function ReviewModal({ task, onClose, onReview }) {
   const [reviewStatus, setReviewStatus] = useState("approved");
@@ -128,6 +129,22 @@ function ReviewModal({ task, onClose, onReview }) {
                   </div>
                 ))}
               </div>
+
+              {/* Before vs After Site Inspection Split Comparison */}
+              {task.files && task.files.length > 0 && task.submissionFiles && task.submissionFiles.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                    ↔️ Interactive Site Proof Comparison (Before vs After)
+                  </span>
+                  <BeforeAfterSlider
+                    beforeImage={task.files[0]}
+                    afterImage={task.submissionFiles[0]}
+                    beforeLabel="Initial Site State"
+                    afterLabel="Work Completion Proof"
+                    className="max-h-72"
+                  />
+                </div>
+              )}
             </div>
           )}
 

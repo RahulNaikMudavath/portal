@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { uploadTaskAttachment, deleteTaskAttachment } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
 import { isAppOnline, queueOfflineAction } from "../../utils/offlineSync";
+import BeforeAfterSlider from "../common/BeforeAfterSlider";
 
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -11,7 +12,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 });
 
 export default function PhotoGallery({ task, onRefresh }) {
-  const [activeTab, setActiveTab] = useState("before"); // before, during, after
+  const [activeTab, setActiveTab] = useState("before"); // before, during, after, compare
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -199,12 +200,23 @@ export default function PhotoGallery({ task, onRefresh }) {
               {tab} ({mediaByStage[tab]?.length || 0})
             </button>
           ))}
+          <button
+            onClick={() => setActiveTab("compare")}
+            className={`text-[10px] font-bold uppercase tracking-wider py-1 px-3 rounded-md transition duration-200 flex items-center gap-1 ${
+              activeTab === "compare"
+                ? "bg-indigo-600 text-white"
+                : "text-slate-455 hover:text-white"
+            }`}
+          >
+            <span>↔️</span>
+            <span>Compare</span>
+          </button>
         </div>
       </div>
 
       {/* Drag & Drop Overlay */}
       <AnimatePresence>
-        {isDragging && (
+        {isDragging && activeTab !== "compare" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -226,7 +238,18 @@ export default function PhotoGallery({ task, onRefresh }) {
         </div>
       )}
 
-      {currentMedia.length > 0 ? (
+      {/* Compare View */}
+      {activeTab === "compare" ? (
+        <div className="py-2">
+          <BeforeAfterSlider
+            beforeImage={mediaByStage.before.find((m) => !m.isVideo)?.url}
+            afterImage={mediaByStage.after.find((m) => !m.isVideo)?.url}
+            beforeLabel="Initial Inspection Site"
+            afterLabel="Completed Work Verification"
+            className="max-h-[360px]"
+          />
+        </div>
+      ) : currentMedia.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {currentMedia.map((media, index) => (
             <motion.div
