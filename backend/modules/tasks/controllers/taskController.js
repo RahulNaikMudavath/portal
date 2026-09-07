@@ -2,6 +2,12 @@ const Task = require("../../../modules/tasks/models/Task");
 const Activity = require("../../../modules/activity/models/Activity");
 const Notification = require("../../../modules/notifications/models/Notification");
 const WorkRequest = require("../../../modules/workrequests/models/WorkRequest");
+const User = require("../../../modules/users/models/User");
+const {
+  notifyClientVisitCheckpoint,
+  notifyClientTaskApproved,
+  notifyEngineerTaskAssigned
+} = require("../../../modules/whatsapp/services/milestoneNotificationService");
 
 
 const updateTaskProgress = async (req, res) => {
@@ -227,6 +233,16 @@ exports.createTask = async (req, res) => {
     if (io) {
       io.to(assignedTo.toString()).emit("newNotification", notification);
       io.emit("taskDashboardUpdate", { taskId: task._id });
+    }
+
+    // 📱 Automated WhatsApp Dispatch to Assigned Engineer
+    try {
+      const assignedUser = await User.findById(assignedTo);
+      if (assignedUser && assignedUser.phone) {
+        notifyEngineerTaskAssigned(task, assignedUser.phone, assignedUser.name, io);
+      }
+    } catch (e) {
+      console.warn("[TaskAssignment WhatsApp] Warning:", e.message);
     }
 
     res.status(201).json(task);
@@ -567,6 +583,15 @@ exports.reviewTask = async (req, res) => {
       io.emit("taskDashboardUpdate", { taskId: task._id });
     }
 
+    // 📱 Automated WhatsApp Notification to Client upon Official Approval
+    if (status === "approved") {
+      try {
+        notifyClientTaskApproved(task, Number(adminRating) || 5, reason || "", io);
+      } catch (e) {
+        console.warn("[TaskApproval WhatsApp] Warning:", e.message);
+      }
+    }
+
     res.json({
       message: `Task ${status}`,
       task
@@ -734,6 +759,14 @@ const updateVisitStatus = async (req, res) => {
 
     await task.save();
     emitDashboardUpdate(req, task._id);
+
+    // 📱 Automated WhatsApp Notification to Client on Milestone Checkpoints
+    try {
+      notifyClientVisitCheckpoint(task, req.user?.name || "Field Engineer", req.app.get("io"));
+    } catch (e) {
+      console.warn("[VisitStatus WhatsApp] Warning:", e.message);
+    }
+
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: error.message });
