@@ -8,8 +8,8 @@ export function useLocationTracker() {
 
     try {
       const user = JSON.parse(userStr);
-      // Only track location for client/engineer role
-      if (user.role !== "client") return;
+      // Only track location for field engineer / client role
+      if (user.role !== "client" && user.role !== "engineer") return;
 
       const reportLocation = () => {
         if (!navigator.geolocation) return;

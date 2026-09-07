@@ -9,6 +9,7 @@ import AttentionCenter from "../../components/dashboard/AttentionCenter";
 import { getClients } from "../../services/userService";
 import socket from "../../socket";
 import AddEngineerModal from "../../components/admin/AddEngineerModal";
+import LiveEngineerMap from "../../components/admin/LiveEngineerMap";
 
 function AdminDashboard() {
   const [tasks, setTasks] = useState([]);
@@ -105,28 +106,28 @@ function AdminDashboard() {
 
       return secondDate - firstDate;
     })
-    .slice(0, 8)
+    .slice(0, 5)
     .map((task) => {
-      let title = `Created and assigned task: ${task.title}`;
-      let icon = "➕";
+      let title = "Task Created";
+      let icon = "📝";
       let date = task.createdAt;
 
-      if (task.reviewStatus === "approved") {
-        title = `Approved task: ${task.title}`;
+      if (task.status === "completed") {
+        title = "Task Completed";
         icon = "✅";
-        date = task.updatedAt || task.submittedAt || task.createdAt;
+        date = task.updatedAt;
+      } else if (task.reviewStatus === "approved") {
+        title = "Review Approved";
+        icon = "⭐";
+        date = task.updatedAt;
       } else if (task.reviewStatus === "rejected") {
-        title = `Rejected task: ${task.title}`;
-        icon = "↩️";
-        date = task.updatedAt || task.submittedAt || task.createdAt;
-      } else if (task.status === "completed") {
-        title = `Submitted task: ${task.title}`;
-        icon = "📤";
-        date = task.submittedAt || task.updatedAt || task.createdAt;
+        title = "Review Rejected";
+        icon = "⚠️";
+        date = task.updatedAt;
       } else if (task.status === "in-progress") {
-        title = `Started task: ${task.title}`;
-        icon = "▶️";
-        date = task.startedAt || task.updatedAt || task.createdAt;
+        title = "Work Started";
+        icon = "⚡";
+        date = task.startedAt || task.updatedAt;
       }
 
       return {
@@ -164,6 +165,16 @@ function AdminDashboard() {
                 Workspace Overview
               </button>
               <button
+                onClick={() => setActiveTab("radar")}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                  activeTab === "radar"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-650 dark:text-gray-400 hover:text-light-text dark:hover:text-white"
+                }`}
+              >
+                🛰️ Live GPS Radar
+              </button>
+              <button
                 onClick={() => setActiveTab("ai")}
                 className={`px-4 py-2 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
                   activeTab === "ai"
@@ -176,7 +187,7 @@ function AdminDashboard() {
             </div>
           </div>
 
-          {activeTab === "overview" ? (
+          {activeTab === "overview" && (
             <div className="space-y-10">
               {/* Main Analytics */}
               <SmartAiDashboard tasks={tasks} onApproveTask={handleViewTask} />
@@ -376,7 +387,13 @@ function AdminDashboard() {
                 </div>
               </section>
             </div>
-          ) : (
+          )}
+
+          {activeTab === "radar" && (
+            <LiveEngineerMap tasks={tasks} />
+          )}
+
+          {activeTab === "ai" && (
             <AiAnalyticsView />
           )}
         </div>
