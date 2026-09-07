@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { addMaterial } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
+import VoiceDictationButton from "../common/VoiceDictationButton";
 
 export default function MaterialsCard({ task, onRefresh }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -67,12 +68,20 @@ export default function MaterialsCard({ task, onRefresh }) {
           >
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               <div className="sm:col-span-6">
-                <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">
-                  Material / Part Name
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-bold text-slate-450 uppercase">
+                    Material / Part Name
+                  </label>
+                  <VoiceDictationButton
+                    currentValue={name}
+                    onTranscriptChange={setName}
+                    size="sm"
+                    placeholder="Speak material name"
+                  />
+                </div>
                 <input
                   type="text"
-                  placeholder="e.g. PVC Pressure Pipe"
+                  placeholder="e.g. PVC Pressure Pipe (or tap mic to speak)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
@@ -114,12 +123,20 @@ export default function MaterialsCard({ task, onRefresh }) {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">
-                Remarks / Purpose
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] font-bold text-slate-450 uppercase">
+                  Remarks / Purpose
+                </label>
+                <VoiceDictationButton
+                  currentValue={remarks}
+                  onTranscriptChange={setRemarks}
+                  size="sm"
+                  placeholder="Speak installation remarks"
+                />
+              </div>
               <input
                 type="text"
-                placeholder="e.g. Installed in target pipeline junction"
+                placeholder="e.g. Installed in target pipeline junction (or tap mic)"
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"

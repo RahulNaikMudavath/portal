@@ -15,6 +15,7 @@ import VoiceNotesCard from "./VoiceNotesCard";
 import QrCodeScannerCard from "./QrCodeScannerCard";
 import { submitCustomerSignOff } from "../../services/taskService";
 import { motion, AnimatePresence } from "framer-motion";
+import VoiceDictationButton from "../common/VoiceDictationButton";
 
 // Enhanced Customer Sign-off Card with Canvas and Ratings
 function CustomerSignatureCard({ task, onRefresh }) {
@@ -193,12 +194,20 @@ function CustomerSignatureCard({ task, onRefresh }) {
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">
-              Remarks / Comments
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] font-bold text-slate-450 uppercase">
+                Remarks / Comments
+              </label>
+              <VoiceDictationButton
+                currentValue={remarks}
+                onTranscriptChange={setRemarks}
+                size="sm"
+                placeholder="Speak customer remarks"
+              />
+            </div>
             <input
               type="text"
-              placeholder="e.g. Very professional service, completed on schedule."
+              placeholder="e.g. Very professional service, completed on schedule. (or tap mic)"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               className="w-full bg-slate-955 border border-slate-850 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500/50"

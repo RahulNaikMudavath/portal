@@ -5,6 +5,7 @@ import {
 } from "../../services/commentService";
 import socket from "../../socket";
 import { Mic, Square, Send, Volume2 } from "lucide-react";
+import VoiceDictationButton from "../common/VoiceDictationButton";
 
 function TaskComments({ taskId }) {
   const [comments, setComments] = useState([]);
@@ -314,22 +315,33 @@ function TaskComments({ taskId }) {
               </div>
             ) : (
               <>
-                <input
-                  value={message}
-                  onChange={(event) => setMessage(event.target.value)}
-                  placeholder="Write a message or record voice..."
-                  className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-500 transition"
-                />
+                <div className="relative min-w-0 flex-1 flex items-center">
+                  <input
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder="Type message or click mic to dictate..."
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-4 pr-10 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-500 transition"
+                  />
+                  <div className="absolute right-2 flex items-center">
+                    <VoiceDictationButton
+                      currentValue={message}
+                      onTranscriptChange={setMessage}
+                      size="sm"
+                      placeholder="Dictate message"
+                    />
+                  </div>
+                </div>
 
-                {/* Microphone Record Button */}
+                {/* Microphone Record Voice Note Button */}
                 <button
                   type="button"
                   onClick={startRecording}
                   disabled={sending}
-                  title="Record Voice Note"
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 border border-slate-700 transition cursor-pointer disabled:opacity-50"
+                  title="Record Audio Voice Note"
+                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 border border-slate-700 transition cursor-pointer disabled:opacity-50 flex items-center gap-1 text-xs font-semibold"
                 >
-                  <Mic className="h-4 w-4" />
+                  <Volume2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Audio Note</span>
                 </button>
 
                 {/* Send Button */}
