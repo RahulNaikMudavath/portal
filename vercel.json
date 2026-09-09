@@ -1,4 +1,7 @@
 {
+  "buildCommand": "npm --prefix admin-client-portal run build",
+  "outputDirectory": "admin-client-portal/dist",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
