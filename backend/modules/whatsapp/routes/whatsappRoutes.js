@@ -10,7 +10,8 @@ const {
   metaVerifyWebhook,
   metaReceiveWebhook,
   sendMessage,
-  sendMedia
+  sendMedia,
+  simulateIncoming
 } = require("../controllers/whatsappController");
 
 // Official Meta WhatsApp Cloud API Webhooks (Public for Meta verification and webhook events)
@@ -20,6 +21,8 @@ router.post("/webhook", metaReceiveWebhook);
 // Outgoing & Ingestion endpoints (Protected - Admins only)
 router.post("/send", protect, isAdmin, sendMessage);
 router.post("/send-media", protect, isAdmin, upload.single("file"), sendMedia);
+router.post("/simulate-incoming", protect, isAdmin, simulateIncoming);
 router.get("/conversations", protect, isAdmin, getConversations);
 
 module.exports = router;
+

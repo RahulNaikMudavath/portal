@@ -289,10 +289,77 @@ const sendMedia = async (req, res) => {
   }
 };
 
+/**
+ * 🤖 Simulate Incoming Customer WhatsApp Message (POST /api/whatsapp/simulate-incoming)
+ * Used in sandbox/demo to test real-time alerts, audio chimes, and AI task extraction.
+ */
+const simulateIncoming = async (req, res) => {
+  try {
+    const {
+      from = "919876543210",
+      customerName = "Er. Senthil Kumar (Client)",
+      text = "Hi MAARAN Engineers, can you please share the structural estimate for the ongoing pillar work?",
+      messageType = "text",
+      mediaUrl = "",
+      fileName = ""
+    } = req.body;
+
+    const { findOrCreateConversation } = require("../services/conversationService");
+    const { emitWhatsAppEvents } = require("../socket/socketEvents");
+    const conversation = await findOrCreateConversation(from, customerName);
+
+    let mediaObj = null;
+    if (mediaUrl) {
+      mediaObj = {
+        url: mediaUrl,
+        mimeType: messageType === "image" ? "image/jpeg" : messageType === "audio" ? "audio/mp3" : "application/pdf",
+        fileName: fileName || (messageType === "image" ? "site-inspection.jpg" : "document.pdf")
+      };
+    }
+
+    const createdMessage = await WhatsappMessage.create({
+      conversationId: conversation.conversationId,
+      conversation: conversation._id,
+      metaMessageId: `SIM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      phoneNumber: from,
+      customerName: customerName,
+      direction: "incoming",
+      messageType: messageType,
+      text: text,
+      media: mediaObj,
+      mediaUrl: mediaUrl,
+      fileName: fileName,
+      status: "received",
+      createdAt: new Date()
+    });
+
+    conversation.lastMessageAt = new Date();
+    conversation.lastMessage = text || `[${messageType.toUpperCase()}]`;
+    conversation.unreadCount = (conversation.unreadCount || 0) + 1;
+    await conversation.save();
+
+    const io = req.app.get("io");
+    if (io) {
+      emitWhatsAppEvents(io, "newMessage", createdMessage);
+      emitWhatsAppEvents(io, "conversationUpdated", conversation);
+    }
+
+    res.status(201).json({
+      message: "Simulated message received successfully",
+      data: createdMessage
+    });
+  } catch (err) {
+    console.error("Simulation error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   getConversations,
   metaVerifyWebhook,
   metaReceiveWebhook,
   sendMessage,
-  sendMedia
+  sendMedia,
+  simulateIncoming
 };
+

@@ -19,6 +19,12 @@ export const sendMediaMessage = async (formData) => {
     return res.data;
 };
 
+export const simulateIncomingMessage = async (data) => {
+    const res = await API.post("/api/whatsapp/simulate-incoming", data);
+    return res.data;
+};
+
+
 export const getCustomerDisplayName = (chat) => {
     if (!chat) return "Customer";
     if (
