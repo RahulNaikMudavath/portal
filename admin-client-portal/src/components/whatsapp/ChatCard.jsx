@@ -2,11 +2,16 @@ import { getCustomerDisplayName } from "../../services/whatsappService";
 import { Check, CheckCheck, Camera, Mic, FileText, Video } from "lucide-react";
 
 const ChatCard = ({ chat, selected, onSelect }) => {
+  const normalizeDigits = (val) => String(val || "").replace(/\D/g, "");
+  const selectedPhone = normalizeDigits(selected?.phoneNumber || selected?.conversationId || selected?._id);
+  const chatPhone = normalizeDigits(chat?.phoneNumber || chat?.conversationId || chat?._id);
+
   const isSelected = Boolean(
     selected &&
-      ((selected._id && (selected._id === chat._id || selected._id === chat.conversationId)) ||
-        (selected.conversationId && (selected.conversationId === chat.conversationId || selected.conversationId === chat._id)) ||
-        (selected.phoneNumber && chat.phoneNumber && selected.phoneNumber === chat.phoneNumber))
+      ((selected._id && chat._id && String(selected._id) === String(chat._id)) ||
+        (selected.conversationId && chat.conversationId && String(selected.conversationId) === String(chat.conversationId)) ||
+        (selectedPhone && chatPhone && selectedPhone === chatPhone) ||
+        (selected.customerName && chat.customerName && selected.customerName === chat.customerName && selected.customerName !== "Customer"))
   );
   const unread = isSelected ? 0 : (chat.unreadCount || chat.unread || 0);
   const displayName = getCustomerDisplayName(chat);

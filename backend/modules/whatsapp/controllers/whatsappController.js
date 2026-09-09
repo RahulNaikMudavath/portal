@@ -57,6 +57,20 @@ const getConversations = async (req, res) => {
             chatObj.customerName = conv.user.name;
           }
 
+          const unreadMessagesCount = messages.filter(
+            (m) => m.direction === "incoming" && m.status !== "read"
+          ).length;
+
+          chatObj.unreadCount = unreadMessagesCount;
+          chatObj.unread = unreadMessagesCount;
+
+          if (conv.unreadCount !== unreadMessagesCount) {
+            WhatsAppConversation.updateOne(
+              { _id: conv._id },
+              { $set: { unreadCount: unreadMessagesCount } }
+            ).catch(() => {});
+          }
+
           try {
             chatObj.ai = await analyzeConversation(messages);
           } catch (aiErr) {
@@ -364,10 +378,22 @@ const markConversationAsRead = async (req, res) => {
       return res.status(400).json({ message: "Conversation ID is required" });
     }
 
-    let query = { conversationId: id };
+    const cleanDigits = String(id).replace(/\D/g, "");
+    let query = {
+      $or: [
+        { conversationId: id },
+        { phoneNumber: id }
+      ]
+    };
+    if (cleanDigits) {
+      query.$or.push({ conversationId: cleanDigits });
+      query.$or.push({ phoneNumber: cleanDigits });
+      query.$or.push({ phoneNumber: `+${cleanDigits}` });
+    }
+
     const mongoose = require("mongoose");
     if (mongoose.Types.ObjectId.isValid(id)) {
-      query = { $or: [{ _id: id }, { conversationId: id }] };
+      query.$or.push({ _id: id });
     }
 
     const conversation = await WhatsAppConversation.findOne(query);
@@ -381,10 +407,11 @@ const markConversationAsRead = async (req, res) => {
         {
           $or: [
             { conversation: conversation._id },
-            { conversationId: conversation.conversationId }
+            { conversationId: conversation.conversationId },
+            { phoneNumber: conversation.phoneNumber },
+            { phoneNumber: cleanDigits }
           ],
-          direction: "incoming",
-          status: { $ne: "read" }
+          direction: "incoming"
         },
         { $set: { status: "read" } }
       );
@@ -403,7 +430,12 @@ const markConversationAsRead = async (req, res) => {
     // Fallback if no conversation document exists yet
     await WhatsappMessage.updateMany(
       {
-        conversationId: id,
+        $or: [
+          { conversationId: id },
+          { conversationId: cleanDigits },
+          { phoneNumber: id },
+          { phoneNumber: cleanDigits }
+        ],
         direction: "incoming"
       },
       { $set: { status: "read" } }

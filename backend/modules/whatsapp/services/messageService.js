@@ -35,7 +35,21 @@ const sendTextMessage = async (to, text, io = null, senderUserId = null) => {
     status: "sent"
   });
 
-  // Update Conversation pointers
+  // Automatically mark all prior incoming messages as read on reply
+  await WhatsappMessage.updateMany(
+    {
+      $or: [
+        { conversation: conversation._id },
+        { conversationId: conversation.conversationId },
+        { phoneNumber: cleanTo }
+      ],
+      direction: "incoming"
+    },
+    { $set: { status: "read" } }
+  );
+
+  // Update Conversation pointers & zero unreadCount
+  conversation.unreadCount = 0;
   conversation.lastMessage = text;
   conversation.lastMessageAt = new Date();
   conversation.lastMessageId = createdMessage._id;

@@ -19,6 +19,19 @@ function WhatsAppInbox() {
         selectedChatRef.current = selectedChat;
     }, [selectedChat]);
 
+    const normalizeDigits = (val) => String(val || "").replace(/\D/g, "");
+
+    const isSameChat = (a, b) => {
+        if (!a || !b) return false;
+        if (a._id && b._id && String(a._id) === String(b._id)) return true;
+        if (a.conversationId && b.conversationId && String(a.conversationId) === String(b.conversationId)) return true;
+        const phoneA = normalizeDigits(a.phoneNumber || a.conversationId || a._id);
+        const phoneB = normalizeDigits(b.phoneNumber || b.conversationId || b._id);
+        if (phoneA && phoneB && phoneA === phoneB) return true;
+        if (a.customerName && b.customerName && a.customerName === b.customerName && a.customerName !== "Customer") return true;
+        return false;
+    };
+
     const loadChats = async () => {
         try {
             const data = await getConversations();
@@ -26,7 +39,7 @@ function WhatsAppInbox() {
 
             // If a chat is currently open and active, ensure its unread count is zeroed in local state
             const normalizedData = data.map(c => {
-                if (currentSelected && (c._id === currentSelected._id || (c.conversationId && c.conversationId === currentSelected.conversationId))) {
+                if (currentSelected && isSameChat(c, currentSelected)) {
                     return { ...c, unreadCount: 0, unread: 0 };
                 }
                 return c;
@@ -35,7 +48,7 @@ function WhatsAppInbox() {
             setChats(normalizedData);
 
             if (currentSelected) {
-                const refreshed = normalizedData.find(c => c._id === currentSelected._id || (c.conversationId && c.conversationId === currentSelected.conversationId));
+                const refreshed = normalizedData.find(c => isSameChat(c, currentSelected));
                 if (refreshed) setSelectedChat(refreshed);
             }
         } catch (err) {
@@ -49,21 +62,12 @@ function WhatsAppInbox() {
         // 1. Immediately zero out unread badge in UI state
         setSelectedChat(chat);
         setChats(prevChats =>
-            prevChats.map(c => {
-                const isMatch =
-                    (c._id && (c._id === chat._id || c._id === chat.conversationId)) ||
-                    (c.conversationId && (c.conversationId === chat.conversationId || c.conversationId === chat._id));
-                if (isMatch) {
-                    return { ...c, unreadCount: 0, unread: 0 };
-                }
-                return c;
-            })
+            prevChats.map(c => isSameChat(c, chat) ? { ...c, unreadCount: 0, unread: 0 } : c)
         );
 
         // 2. Persist read status to MongoDB backend
-        const unread = chat.unreadCount || chat.unread || 0;
-        const targetId = chat._id || chat.conversationId;
-        if (unread > 0 && targetId) {
+        const targetId = chat.phoneNumber || chat.conversationId || chat._id;
+        if (targetId) {
             try {
                 await markConversationAsRead(targetId);
             } catch (err) {
@@ -72,16 +76,18 @@ function WhatsAppInbox() {
         }
     };
 
-    // Automatically mark selected chat as read if it arrives with unread messages
+    // Automatically mark selected chat as read whenever selectedChat changes
     useEffect(() => {
         if (selectedChat) {
-            const unread = selectedChat.unreadCount || selectedChat.unread || 0;
-            const targetId = selectedChat._id || selectedChat.conversationId;
-            if (unread > 0 && targetId) {
+            const targetId = selectedChat.phoneNumber || selectedChat.conversationId || selectedChat._id;
+            if (targetId) {
                 markConversationAsRead(targetId).catch(() => {});
             }
+            setChats(prevChats =>
+                prevChats.map(c => isSameChat(c, selectedChat) ? { ...c, unreadCount: 0, unread: 0 } : c)
+            );
         }
-    }, [selectedChat?._id, selectedChat?.conversationId]);
+    }, [selectedChat?._id, selectedChat?.conversationId, selectedChat?.phoneNumber]);
 
     useEffect(() => {
         loadChats();
@@ -119,6 +125,9 @@ function WhatsAppInbox() {
     const handleSendMessage = async (chat, text) => {
         try {
             const recipient = chat.phoneNumber || chat.conversationId;
+            setChats(prevChats =>
+                prevChats.map(c => isSameChat(c, chat) ? { ...c, unreadCount: 0, unread: 0, lastMessage: text, lastMessageAt: new Date().toISOString() } : c)
+            );
             await sendWhatsAppApi({
                 to: recipient,
                 text: text
