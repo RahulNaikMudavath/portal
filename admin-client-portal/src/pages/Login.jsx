@@ -185,7 +185,7 @@ function Login() {
               disabled={loading}
               className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 transition duration-150 font-medium text-xs text-white shadow-sm active:scale-[0.99] cursor-pointer disabled:opacity-50"
             >
-              <svg className="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 min-w-[20px] max-w-[20px] shrink-0" width="20" height="20" viewBox="0 0 24 24">
                 <path
                   fill="#EA4335"
                   d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 15 0 12 0 7.35 0 3.37 2.67 1.43 6.56l3.86 3C6.23 6.94 8.89 5.04 12 5.04z"

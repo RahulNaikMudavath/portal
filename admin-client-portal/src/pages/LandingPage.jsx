@@ -278,7 +278,7 @@ export default function LandingPage() {
                 onClick={() => setShowConsultModal(true)}
                 className="px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-850 text-slate-200 border border-slate-700/80 font-bold text-sm transition flex items-center gap-2.5 active:scale-95 cursor-pointer"
               >
-                <FileCheck2 className="h-4.5 w-4.5 text-amber-400" />
+                <FileCheck2 className="h-5 w-5 text-amber-400" />
                 <span>Book Free Site Consultation</span>
               </button>
             </motion.div>
