@@ -5,12 +5,27 @@ const cloudinary = require("../config/cloudinary");
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
+    const mime = (file.mimetype || "").toLowerCase();
+    const originalName = file.originalname || "attachment";
+
+    let resource_type = "raw";
+    if (mime.startsWith("image/")) {
+      resource_type = "image";
+    } else if (mime.startsWith("video/") || mime.startsWith("audio/")) {
+      resource_type = "video";
+    }
+
+    const cleanName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const uniquePublicId = `${Date.now()}_${cleanName}`;
+
     return {
       folder: "work-portal",
-      resource_type: "auto"
+      resource_type: resource_type,
+      public_id: resource_type === "raw" ? uniquePublicId : undefined
     };
   }
 });
+
 
 const ALLOWED_MIME_TYPES = new Set([
   // Images

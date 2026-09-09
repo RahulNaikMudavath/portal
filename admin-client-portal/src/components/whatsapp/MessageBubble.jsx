@@ -81,8 +81,8 @@ const MessageBubble = ({ message, onReply }) => {
   const isDoc =
     msgType === "document" ||
     msgType === "pdf" ||
-    (fileName && (fileName.toLowerCase().endsWith(".pdf") || fileName.toLowerCase().endsWith(".docx") || fileName.toLowerCase().endsWith(".xlsx") || fileName.toLowerCase().endsWith(".txt") || fileName.toLowerCase().endsWith(".zip"))) ||
-    (message.text && message.text.toLowerCase().includes("[document"));
+    (fileName && (fileName.toLowerCase().endsWith(".pdf") || fileName.toLowerCase().endsWith(".docx") || fileName.toLowerCase().endsWith(".xlsx") || fileName.toLowerCase().endsWith(".txt") || fileName.toLowerCase().endsWith(".zip") || fileName.toLowerCase().endsWith(".csv"))) ||
+    (message.text && (message.text.toLowerCase().includes("[document") || message.text.toLowerCase().includes("[pdf")));
 
   // Sticker detection
   const isSticker = msgType === "sticker" || (message.text && message.text.toLowerCase().includes("[sticker]"));
@@ -288,16 +288,25 @@ const MessageBubble = ({ message, onReply }) => {
             </div>
           )}
 
-          {/* 5. Document / PDF Rendering (ALWAYS VISIBLE!) */}
+          {/* 5. Document / PDF Rendering (ALWAYS VISIBLE & CLICKABLE) */}
           {isDoc && (
             <div className="p-2">
-              <div className="p-3 rounded-xl bg-black/5 dark:bg-black/20 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3">
+              <div
+                onClick={() => {
+                  if (hasValidUrl) {
+                    window.open(rawUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                className={`p-3 rounded-xl bg-black/5 dark:bg-black/20 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3 ${
+                  hasValidUrl ? "cursor-pointer hover:bg-black/10 dark:hover:bg-black/30 transition" : ""
+                }`}
+              >
                 <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-lg shrink-0">
                   {fileName.toLowerCase().endsWith(".pdf") ? "📄" : fileName.toLowerCase().endsWith(".xls") || fileName.toLowerCase().endsWith(".xlsx") ? "📊" : "📁"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {fileName && fileName !== "Attachment" ? fileName : message.text?.replace(/^\[Document:\s*|\]$/gi, "") || "Document"}
+                    {fileName && fileName !== "Attachment" ? fileName : message.text?.replace(/^\[(Document|PDF):\s*|\]$/gi, "") || "Document"}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {fileSize ? fileSize : "WhatsApp Attachment"}
@@ -309,6 +318,7 @@ const MessageBubble = ({ message, onReply }) => {
                     target="_blank"
                     rel="noopener noreferrer"
                     download={fileName}
+                    onClick={(e) => e.stopPropagation()}
                     className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition shrink-0"
                     title="Download / View"
                   >
@@ -318,6 +328,7 @@ const MessageBubble = ({ message, onReply }) => {
               </div>
             </div>
           )}
+
 
           {/* 6. Text / Caption */}
           {cleanText && (

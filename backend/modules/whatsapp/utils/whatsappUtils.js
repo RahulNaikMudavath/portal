@@ -1,14 +1,40 @@
+const isInvalidToken = (str) => {
+  if (!str || typeof str !== "string") return true;
+  const s = str.trim().toLowerCase();
+  return (
+    s === "" ||
+    s.includes("xxxx") ||
+    s.includes("your_") ||
+    s.includes("dummy") ||
+    s.includes("placeholder") ||
+    s === "undefined" ||
+    s === "null" ||
+    s.length < 10
+  );
+};
+
 /**
  * Service configuration helper for WhatsApp Cloud API
  */
 const getWhatsAppConfig = () => {
+  const envToken = process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN;
+  const token = !isInvalidToken(envToken)
+    ? envToken.trim()
+    : "EAARapshvInMBSaIZCVqZBkZAXiViibyzGeAg2WVbHd2kvfG9QAyfeA6DTLuPhYwR8U0ZCxRsl2XTRb9KYy67gpNtZCsDnp0uqExCoQEXrXhdiozPShJ9UWVTs7UAPHpEEVpdAZBD06oB47KsnzXZCLxTq56e9mglWwW8MLlExUOOZAs1v1wS19WuDeWCNv5hVwZDZD";
+
+  const envPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const phoneNumberId = !isInvalidToken(envPhoneId)
+    ? envPhoneId.trim()
+    : "1347484401774177";
+
   return {
-    token: process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || "EAARapshvInMBSaIZCVqZBkZAXiViibyzGeAg2WVbHd2kvfG9QAyfeA6DTLuPhYwR8U0ZCxRsl2XTRb9KYy67gpNtZCsDnp0uqExCoQEXrXhdiozPShJ9UWVTs7UAPHpEEVpdAZBD06oB47KsnzXZCLxTq56e9mglWwW8MLlExUOOZAs1v1wS19WuDeWCNv5hVwZDZD",
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "1347484401774177",
+    token,
+    phoneNumberId,
     verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || "constructai_verify_token",
     apiVersion: process.env.GRAPH_API_VERSION || process.env.WHATSAPP_API_VERSION || "v23.0"
   };
 };
+
 
 /**
  * Clean phone number helper to extract numeric digits only

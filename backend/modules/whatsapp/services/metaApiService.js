@@ -62,17 +62,21 @@ const fetchAndStoreMetaMedia = async (metaMediaId, fallbackType = "image", origi
 
     // Step 3: Stream upload buffer to Cloudinary
     const cloudinaryResult = await new Promise((resolve, reject) => {
-      let resourceType = "auto";
-      if (mimeType.startsWith("video/")) resourceType = "video";
-      else if (mimeType.startsWith("image/") || mimeType.includes("webp") || fallbackType === "sticker") resourceType = "image";
-      else if (mimeType.startsWith("audio/")) resourceType = "video"; // Cloudinary treats audio as video resource type
-      else resourceType = "raw";
+      let resourceType = "raw";
+      if (mimeType.startsWith("image/") || mimeType.includes("webp") || fallbackType === "sticker" || fallbackType === "image") {
+        resourceType = "image";
+      } else if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+        resourceType = "video";
+      }
+
+      const cleanFileName = (originalFileName || `${metaMediaId}.bin`).replace(/[^a-zA-Z0-9._-]/g, "_");
+      const publicId = resourceType === "raw" ? `wa_${Date.now()}_${cleanFileName}` : `wa_${metaMediaId}_${Date.now()}`;
 
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder: "work-portal/whatsapp-media",
           resource_type: resourceType,
-          public_id: `wa_${metaMediaId}_${Date.now()}`
+          public_id: publicId
         },
         (error, result) => {
           if (error) reject(error);
@@ -90,7 +94,7 @@ const fetchAndStoreMetaMedia = async (metaMediaId, fallbackType = "image", origi
       url: secureUrl,
       mimeType: mimeType || cloudinaryResult.format,
       fileSize: fileSize || cloudinaryResult.bytes,
-      fileName: originalFileName || `${metaMediaId}.${cloudinaryResult.format || "bin"}`
+      fileName: originalFileName || cleanFileName || `${metaMediaId}.${cloudinaryResult.format || "bin"}`
     };
   } catch (err) {
     console.error("[MetaMedia] Error fetching and uploading media:", err);
