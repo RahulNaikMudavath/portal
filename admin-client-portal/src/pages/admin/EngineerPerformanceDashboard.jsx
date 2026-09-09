@@ -2,10 +2,12 @@ import { useEffect, useState, useMemo } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import { getEngineerPerformanceAnalytics } from "../../services/analyticsService";
 import API from "../../services/api";
+import AddEngineerModal from "../../components/admin/AddEngineerModal";
 import { 
   Search, Award, Clock, Star, X, Phone, Mail, MapPin, 
-  TrendingUp, CheckCircle, AlertTriangle, Briefcase, ChevronRight 
+  TrendingUp, CheckCircle, AlertTriangle, Briefcase, ChevronRight, UserPlus 
 } from "lucide-react";
+
 
 // Format seconds into readable duration
 const formatDuration = (totalSeconds) => {
@@ -44,6 +46,8 @@ export default function EngineerPerformanceDashboard() {
   const [selectedEngineer, setSelectedEngineer] = useState(null);
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [hoveredHeatmap, setHoveredHeatmap] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
 
   const fetchAnalytics = async () => {
     try {
@@ -154,13 +158,23 @@ export default function EngineerPerformanceDashboard() {
               Analyze work orders, response timelines, field output, and client ratings.
             </p>
           </div>
-          <button
-            onClick={fetchAnalytics}
-            className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Refresh Data
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-2 justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:from-emerald-500 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Add Engineer</span>
+            </button>
+            <button
+              onClick={fetchAnalytics}
+              className="inline-flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-slate-500 cursor-pointer"
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
+
 
         {/* KPIs Grid */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -949,7 +963,18 @@ export default function EngineerPerformanceDashboard() {
             </div>
           </div>
         )}
+
+        {/* Add Engineer Modal */}
+        <AddEngineerModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            fetchAnalytics();
+          }}
+        />
       </div>
     </AdminLayout>
   );
 }
+
+
