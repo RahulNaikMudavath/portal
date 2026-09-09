@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { login } from "../services/authService";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useGoogleLogin } from "@react-oauth/google";
-import { Plus, X } from "lucide-react";
 import API from "../services/api";
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "424801162325-iels65aul66abevo03u0jgjviou3i8r1.apps.googleusercontent.com";
 
 function Login() {
   const navigate = useNavigate();
@@ -16,19 +13,6 @@ function Login() {
     password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("client"); // admin, client
-
-  // Sandbox Google State
-  const [showSandboxGoogle, setShowSandboxGoogle] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState("");
-  const [googleStatus, setGoogleStatus] = useState("");
-  const [showCustomInput, setShowCustomInput] = useState(false);
-
-  const mockGoogleAccounts = [
-    { name: "Rahul Naik", email: "rahul.naik@gmail.com", avatar: "RN" },
-    { name: "Admin Consultancy", email: "admin@constructai.com", avatar: "AC" },
-    { name: "Engineer Maaran", email: "engineer.maaran@gmail.com", avatar: "EM" }
-  ];
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -64,63 +48,19 @@ function Login() {
   // Official Google OAuth hook with account selector
   const loginWithGoogle = useGoogleLogin({
     onSuccess: (tokenResponse) => {
-      handleGoogleLoginSuccess(tokenResponse.access_token);
+      if (tokenResponse?.access_token) {
+        handleGoogleLoginSuccess(tokenResponse.access_token);
+      }
     },
-    onError: (err) => {
-      console.error("Google Auth popup error:", err);
-      setShowSandboxGoogle(true);
+    onError: (errorResponse) => {
+      console.error("Google Auth popup error:", errorResponse);
+      const errorMsg = errorResponse?.error_description || errorResponse?.error || "Google Sign-In failed.";
+      if (errorResponse?.error !== "popup_closed_by_user") {
+        alert(errorMsg);
+      }
     },
     prompt: "select_account"
   });
-
-  const handleGoogleClick = () => {
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("dummy") || GOOGLE_CLIENT_ID.includes("your_google")) {
-      setShowSandboxGoogle(true);
-      return;
-    }
-    loginWithGoogle();
-  };
-
-  const selectSandboxAccount = (account) => {
-    setGoogleStatus(`Signing in as ${account.name}...`);
-    setTimeout(() => {
-      setGoogleStatus("");
-      setShowSandboxGoogle(false);
-      handleGoogleLoginSuccess(`mock-${account.email}`);
-    }, 1000);
-  };
-
-  const handleCustomSandboxAutofill = (e) => {
-    e.preventDefault();
-    if (!googleEmail || !googleEmail.includes("@")) {
-      setGoogleStatus("Please enter a valid Google email address.");
-      return;
-    }
-    setGoogleStatus("Connecting Google API...");
-    setTimeout(() => {
-      setGoogleStatus("");
-      setShowSandboxGoogle(false);
-      setShowCustomInput(false);
-      handleGoogleLoginSuccess(`mock-${googleEmail}`);
-    }, 1000);
-  };
-
-  // Helper to prefill accounts for demo testing
-  const handlePrefill = (role) => {
-    if (role === "admin") {
-      setForm({
-        email: "admin@constructai.com",
-        password: "password123",
-      });
-      setSelectedRole("admin");
-    } else {
-      setForm({
-        email: "engineer@constructai.com",
-        password: "password123",
-      });
-      setSelectedRole("client");
-    }
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -176,7 +116,7 @@ function Login() {
               </div>
               <div>
                 <h2 className="text-md font-black tracking-wider text-white">MAARAN</h2>
-                <p className="text-[8px] uppercase font-bold text-amber-450 tracking-widest">
+                <p className="text-[8px] uppercase font-bold text-amber-400 tracking-widest">
                   Engineers & Consultancy
                 </p>
               </div>
@@ -191,7 +131,7 @@ function Login() {
           </div>
 
           {/* Enterprise Features List */}
-          <div className="space-y-3 bg-slate-950/40 border border-slate-850 p-4 rounded-2xl">
+          <div className="space-y-3 bg-slate-950/40 border border-slate-800/80 p-4 rounded-2xl">
             <span className="text-[10px] font-black uppercase text-indigo-400 tracking-wider">Enterprise Console</span>
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center gap-2.5 text-slate-300">
@@ -209,7 +149,7 @@ function Login() {
             </div>
           </div>
 
-          <div className="text-[10px] text-slate-500 border-t border-slate-850 pt-4">
+          <div className="text-[10px] text-slate-500 border-t border-slate-800/80 pt-4">
             <p>Support: maaranengineers2016@gmail.com</p>
           </div>
         </motion.div>
@@ -223,45 +163,47 @@ function Login() {
         >
           <div className="mb-6 space-y-0.5">
             <h3 className="text-lg font-bold text-white">Sign In</h3>
-            <p className="text-xs text-slate-405">Access the construction management console.</p>
+            <p className="text-xs text-slate-400">Access the construction management console.</p>
           </div>
 
           <div className="space-y-4 text-xs text-slate-400">
             
+            {/* Real Google OAuth Button */}
+            <button
+              onClick={() => loginWithGoogle()}
+              type="button"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-slate-600 transition duration-150 font-medium text-xs text-white shadow-sm active:scale-[0.99] cursor-pointer disabled:opacity-50"
+            >
+              <svg className="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#EA4335"
+                  d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 15 0 12 0 7.35 0 3.37 2.67 1.43 6.56l3.86 3C6.23 6.94 8.89 5.04 12 5.04z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.19 3.54-8.71z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.29 14.44c-.25-.74-.39-1.54-.39-2.37s.14-1.63.39-2.37l-3.86-3C.56 8.56 0 10.22 0 12s.56 3.44 1.43 5.31l3.86-3z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.72-2.47 1.16-4.05 1.16-3.11 0-5.77-1.9-6.71-4.52l-3.86 3C3.37 21.33 7.35 24 12 24z"
+                />
+              </svg>
+              <span className="font-semibold tracking-wide">Sign in with Google</span>
+            </button>
+
+            <div className="flex items-center gap-2 py-1">
+              <div className="h-px bg-slate-800 flex-1"></div>
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">or continue with email</span>
+              <div className="h-px bg-slate-800 flex-1"></div>
+            </div>
+
             {/* Manual Form */}
             <form onSubmit={handleLogin} className="space-y-4">
-              <button
-                onClick={handleGoogleClick}
-                type="button"
-                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-slate-955 border border-slate-800 hover:bg-slate-900 transition font-bold text-xs uppercase text-white shadow-xs cursor-pointer"
-              >
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 15 0 12 0 7.35 0 3.37 2.67 1.43 6.56l3.86 3C6.23 6.94 8.89 5.04 12 5.04z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.19 3.54-8.71z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.29 14.44c-.25-.74-.39-1.54-.39-2.37s.14-1.63.39-2.37l-3.86-3C.56 8.56 0 10.22 0 12s.56 3.44 1.43 5.31l3.86-3z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.72-2.47 1.16-4.05 1.16-3.11 0-5.77-1.9-6.71-4.52l-3.86 3C3.37 21.33 7.35 24 12 24z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <div className="flex items-center gap-2 py-1">
-                <div className="h-px bg-slate-800 flex-1"></div>
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">or</span>
-                <div className="h-px bg-slate-800 flex-1"></div>
-              </div>
-
               <div>
                 <label
                   htmlFor="login-email-input"
@@ -276,7 +218,7 @@ function Login() {
                   placeholder="e.g. name@company.com"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                   required
                 />
               </div>
@@ -295,7 +237,7 @@ function Login() {
                   placeholder="••••••••"
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full bg-slate-955 border border-slate-850 rounded-xl px-4 py-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                   required
                 />
               </div>
@@ -303,141 +245,20 @@ function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs uppercase tracking-wider py-4 px-4 rounded-xl transition duration-200 active:scale-95 shadow-md shadow-indigo-600/10 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs uppercase tracking-wider py-3.5 px-4 rounded-xl transition duration-200 active:scale-95 shadow-md shadow-indigo-600/10 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none disabled:opacity-50"
               >
                 {loading ? "Authenticating..." : "🚪 Connect Portal"}
               </button>
             </form>
 
             <div className="pt-2 text-center text-xs">
-              <p className="text-slate-450 text-[11px] leading-relaxed">
+              <p className="text-slate-500 text-[11px] leading-relaxed">
                 🔐 Accounts are provisioned directly by your administrator. Contact your organization lead for credentials.
               </p>
             </div>
           </div>
         </motion.div>
       </div>
-
-      {/* Sandbox Google account selector modal */}
-      <AnimatePresence>
-        {showSandboxGoogle && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 flex items-center justify-center p-6 z-50 backdrop-blur-xs"
-          >
-            <div className="w-full max-w-sm bg-white text-slate-800 p-6 rounded-3xl space-y-4 shadow-2xl relative">
-              
-              <button 
-                onClick={() => setShowSandboxGoogle(false)}
-                className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 text-slate-500 cursor-pointer"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-
-              <div className="text-center space-y-2 pb-2 border-b border-gray-100">
-                <svg className="h-6 w-6 mx-auto" viewBox="0 0 24 24">
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 15 0 12 0 7.35 0 3.37 2.67 1.43 6.56l3.86 3C6.23 6.94 8.89 5.04 12 5.04z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.42 3.58v2.98h3.91c2.28-2.1 3.54-5.19 3.54-8.71z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.29 14.44c-.25-.74-.39-1.54-.39-2.37s.14-1.63.39-2.37l-3.86-3C.56 8.56 0 10.22 0 12s.56 3.44 1.43 5.31l3.86-3z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.97-1.07 7.96-2.91l-3.91-2.98c-1.08.72-2.47 1.16-4.05 1.16-3.11 0-5.77-1.9-6.71-4.52l-3.86 3C3.37 21.33 7.35 24 12 24z"
-                  />
-                </svg>
-                <h4 className="text-sm font-bold text-slate-800">Choose an account</h4>
-                <p className="text-[11px] text-slate-500">to continue to <span className="font-semibold text-indigo-600">ConstructAI</span></p>
-              </div>
-
-              {googleStatus ? (
-                <div className="py-8 text-center space-y-3">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-650 border-t-transparent mx-auto"></div>
-                  <p className="text-xs text-slate-600 font-semibold">{googleStatus}</p>
-                </div>
-              ) : !showCustomInput ? (
-                <div className="space-y-1.5">
-                  {mockGoogleAccounts.map((account, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => selectSandboxAccount(account)}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition text-left cursor-pointer"
-                    >
-                      <div className="h-9 w-9 rounded-full bg-indigo-50 text-indigo-650 flex items-center justify-center font-bold text-xs shrink-0">
-                        {account.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate">{account.name}</p>
-                        <p className="text-[10px] text-slate-500 truncate">{account.email}</p>
-                      </div>
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setShowCustomInput(true)}
-                    className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition text-left cursor-pointer"
-                  >
-                    <div className="h-9 w-9 rounded-full bg-gray-50 text-slate-650 flex items-center justify-center font-bold text-xs shrink-0 border border-gray-100">
-                      <Plus className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800">Use another account</p>
-                    </div>
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleCustomSandboxAutofill} className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">
-                      Google Email Address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="e.g. name@gmail.com"
-                      value={googleEmail}
-                      onChange={(e) => setGoogleEmail(e.target.value)}
-                      className="w-full bg-slate-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowCustomInput(false)}
-                      type="button"
-                      className="flex-1 py-2.5 rounded-xl border border-gray-200 text-slate-500 hover:text-slate-700 transition text-xs font-bold cursor-pointer"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-xs shadow-xs cursor-pointer"
-                    >
-                      Sign In
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {!googleStatus && (
-                <div className="pt-2 text-center text-[10px] text-slate-400 border-t border-gray-100 leading-normal">
-                  To continue, Google will share your name, email address, language preference, and profile picture with ConstructAI.
-                </div>
-              )}
-
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div>
   );
