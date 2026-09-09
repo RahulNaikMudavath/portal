@@ -241,7 +241,7 @@ function App() {
             </Suspense>
           </BrowserRouter>
         </WorkRequestProvider>
-    </ThemeProvider>
+      </ThemeProvider>
     </GoogleOAuthProvider>
   );
 }

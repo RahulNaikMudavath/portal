@@ -216,27 +216,48 @@ exports.googleLogin = async (req, res) => {
         picture: "https://lh3.googleusercontent.com/a/default-user=s96-c",
         email_verified: true
       };
-    } else if (!token.includes(".")) {
-      // Access token: fetch user info directly from Google OAuth API
-      const axios = require("axios");
-      const googleResponse = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = googleResponse.data;
-      payload = {
-        sub: data.sub,
-        name: data.name,
-        email: data.email,
-        picture: data.picture,
-        email_verified: data.email_verified || true
-      };
     } else {
-      // JWT ID token: verify using Google client library
-      const ticket = await googleClient.verifyIdToken({
-        idToken: token,
-        audience: googleClientId,
-      });
-      payload = ticket.getPayload();
+      // Check if it's an OAuth2 Access Token (starts with ya29. or does not have exactly 3 JWT parts)
+      const isAccessToken = token.startsWith("ya29.") || token.split(".").length !== 3;
+
+      if (isAccessToken) {
+        // Access token: fetch user info directly from Google OAuth API
+        const axios = require("axios");
+        const googleResponse = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = googleResponse.data;
+        payload = {
+          sub: data.sub,
+          name: data.name,
+          email: data.email,
+          picture: data.picture,
+          email_verified: data.email_verified || true
+        };
+      } else {
+        // JWT ID token: verify using Google client library with userinfo fallback
+        try {
+          const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: googleClientId,
+          });
+          payload = ticket.getPayload();
+        } catch (jwtErr) {
+          console.warn("[GoogleAuth] verifyIdToken failed, attempting userinfo endpoint fallback:", jwtErr.message);
+          const axios = require("axios");
+          const googleResponse = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = googleResponse.data;
+          payload = {
+            sub: data.sub,
+            name: data.name,
+            email: data.email,
+            picture: data.picture,
+            email_verified: data.email_verified || true
+          };
+        }
+      }
     }
 
 
