@@ -7,7 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta name="theme-color" content="#090d16" />
     <meta name="description" content="ConstructAI — Enterprise Civil Engineering & GPS Field Operations Portal" />
-    <title>ConstructAI — Civil & Field Operations Portal</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>MAARAN Engineers & Consultancy — ConstructAI</title>
     <script>
       (function() {
         const saved = localStorage.getItem("theme") || "system";
@@ -26,11 +29,18 @@
         }
       })();
 
-      // Unregister any legacy Service Workers to ensure standard browser website operation
+      // Aggressively purge all old service workers and cache storage
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for (let registration of registrations) {
             registration.unregister();
+          }
+        });
+      }
+      if ("caches" in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) {
+            caches.delete(name);
           }
         });
       }
