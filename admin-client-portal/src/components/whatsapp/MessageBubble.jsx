@@ -87,10 +87,22 @@ const MessageBubble = ({ message, onReply }) => {
   // Sticker detection
   const isSticker = msgType === "sticker" || (message.text && message.text.toLowerCase().includes("[sticker]"));
 
+  // Check if any media card will be rendered
+  const isRenderingMedia = isSticker || (msgType === "image" && !isSticker) || msgType === "video" || isVoiceNote || isDoc;
+
   let cleanText = displayText;
-  if (!cleanText && !hasValidUrl && !isDoc && !isVoiceNote && !isSticker && msgType !== "image" && msgType !== "video") {
-    cleanText = message.text && !message.text.startsWith("[") ? message.text : "";
+  if (!cleanText && !isRenderingMedia) {
+    cleanText = message.text
+      ? message.text.replace(/^\[(Image|Video|Audio|Document|PDF)(:\s*)?/i, "").replace(/\]$/, "").trim() || message.text
+      : "";
   }
+
+  // Emoji only detection for large authentic WhatsApp emoji rendering
+  const isEmojiOnly =
+    Boolean(cleanText) &&
+    !isRenderingMedia &&
+    /^\p{Extended_Pictographic}+$/u.test(cleanText.replace(/\s+/g, "")) &&
+    cleanText.trim().length <= 8;
 
   const renderStatusTicks = () => {
     if (isCustomer) return null;
@@ -136,9 +148,9 @@ const MessageBubble = ({ message, onReply }) => {
           isCustomer ? "justify-start" : "justify-end"
         }`}
       >
-        {/* Floating Quick Reaction & Reply Bar on Hover */}
+        {/* Floating Quick Reaction & Reply Bar - ONLY visible on hover */}
         <div
-          className={`absolute -top-7 z-20 hidden group-hover:flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-full shadow-lg transition-all ${
+          className={`absolute -top-7 z-20 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto flex items-center gap-1 bg-white/95 dark:bg-[#202c33]/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-full shadow-lg transition-all duration-150 ${
             isCustomer ? "left-2" : "right-2"
           }`}
         >
@@ -147,7 +159,7 @@ const MessageBubble = ({ message, onReply }) => {
               key={emoji}
               type="button"
               onClick={() => handleAddReaction(emoji)}
-              className="hover:scale-125 transition-transform text-sm px-1 cursor-pointer"
+              className="hover:scale-130 transition-transform text-sm px-1 cursor-pointer"
             >
               {emoji}
             </button>
@@ -157,7 +169,7 @@ const MessageBubble = ({ message, onReply }) => {
             <button
               type="button"
               onClick={() => onReply(message)}
-              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-500 dark:text-slate-300 rounded-full transition ml-1"
+              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-full transition ml-1 cursor-pointer"
               title="Reply / Quote message"
             >
               <CornerUpLeft className="h-3.5 w-3.5" />
@@ -186,11 +198,12 @@ const MessageBubble = ({ message, onReply }) => {
           {/* Sender Header */}
           {isCustomer && (
             <div className="px-3 pt-2 pb-0.5 flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wide">
+              <span className="text-[11.5px] font-bold text-[#00a884] dark:text-[#53bdeb] tracking-wide">
                 {senderName}
               </span>
             </div>
           )}
+
 
           {/* 1. Sticker Rendering */}
           {isSticker && (
@@ -330,10 +343,14 @@ const MessageBubble = ({ message, onReply }) => {
           )}
 
 
-          {/* 6. Text / Caption */}
+          {/* 6. Text / Caption or Large Emoji */}
           {cleanText && (
-            <div className="px-3.5 py-1.5">
-              <p className="whitespace-pre-wrap leading-relaxed break-words text-[13.5px]">
+            <div className={`px-3.5 ${isEmojiOnly ? "py-2" : "py-1.5"}`}>
+              <p
+                className={`whitespace-pre-wrap leading-relaxed break-words ${
+                  isEmojiOnly ? "text-3xl leading-none text-center select-none" : "text-[13.5px]"
+                }`}
+              >
                 {cleanText}
               </p>
             </div>
@@ -356,7 +373,8 @@ const MessageBubble = ({ message, onReply }) => {
             {reactions.map((r, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs shadow-md"
+                onClick={() => handleAddReaction(r.emoji)}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs shadow-md cursor-pointer hover:scale-110 transition"
               >
                 <span>{r.emoji}</span>
                 {r.count > 1 && (
@@ -366,6 +384,7 @@ const MessageBubble = ({ message, onReply }) => {
             ))}
           </div>
         )}
+
       </div>
 
       {/* Interactive Lightbox Modal */}

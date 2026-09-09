@@ -18,10 +18,24 @@ const ChatInput = ({ chat, replyingTo, onCancelReply, onSendMessage, onSendMedia
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  // Text input ref for auto-focusing
+  const textInputRef = useRef(null);
+
+  // Auto-focus input when a chat is selected or switched
+  useEffect(() => {
+    if (chat && textInputRef.current) {
+      const timer = setTimeout(() => {
+        textInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [chat?._id, chat?.conversationId, chat?.phoneNumber, replyingTo]);
+
   // Voice Note Recording Simulation
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recordIntervalRef = useRef(null);
+
 
   useEffect(() => {
     if (isRecording) {
@@ -352,6 +366,7 @@ const ChatInput = ({ chat, replyingTo, onCancelReply, onSendMessage, onSendMedia
 
           {/* Text Input */}
           <input
+            ref={textInputRef}
             value={message}
             onChange={(e) => {
               const val = e.target.value;
