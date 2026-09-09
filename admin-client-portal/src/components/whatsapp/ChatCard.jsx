@@ -2,8 +2,13 @@ import { getCustomerDisplayName } from "../../services/whatsappService";
 import { Check, CheckCheck, Camera, Mic, FileText, Video } from "lucide-react";
 
 const ChatCard = ({ chat, selected, onSelect }) => {
-  const isSelected = selected?._id === chat._id || (selected?.conversationId && selected?.conversationId === chat.conversationId);
-  const unread = chat.unreadCount || chat.unread || 0;
+  const isSelected = Boolean(
+    selected &&
+      ((selected._id && (selected._id === chat._id || selected._id === chat.conversationId)) ||
+        (selected.conversationId && (selected.conversationId === chat.conversationId || selected.conversationId === chat._id)) ||
+        (selected.phoneNumber && chat.phoneNumber && selected.phoneNumber === chat.phoneNumber))
+  );
+  const unread = isSelected ? 0 : (chat.unreadCount || chat.unread || 0);
   const displayName = getCustomerDisplayName(chat);
 
   const rawTime = chat.lastMessageAt || chat.lastTime || chat.updatedAt;

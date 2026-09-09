@@ -101,7 +101,7 @@ const MessageBubble = ({ message, onReply }) => {
         );
       case "failed":
         return (
-          <span className="text-rose-500 font-bold text-xs flex items-center ml-1" title="Failed to deliver">
+          <span className="text-rose-500 font-bold text-xs flex items-center ml-1 cursor-help" title={message.errorDetails?.message || "Delivery failed: Meta 24-hour customer window expired (customer must send a message first to reopen the conversation window)."}>
             <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
           </span>
         );
