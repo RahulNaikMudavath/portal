@@ -56,9 +56,19 @@ const parseMessageContent = (msg) => {
       mediaUrl = mediaObj.metaMediaId;
       break;
 
+    case "sticker":
+      messageType = "sticker";
+      text = "[Sticker]";
+      mediaObj.metaMediaId = msg.sticker ? msg.sticker.id || "" : "";
+      mediaObj.mimeType = msg.sticker ? msg.sticker.mime_type || "image/webp" : "image/webp";
+      mediaObj.url = mediaObj.metaMediaId;
+      mediaUrl = mediaObj.metaMediaId;
+      fileName = "sticker.webp";
+      break;
+
     case "document": {
       const docMime = (msg.document && msg.document.mime_type) ? msg.document.mime_type.toLowerCase() : "";
-      const docName = (msg.document && msg.document.filename) ? msg.document.filename : "";
+      const docName = (msg.document && msg.document.filename) ? msg.document.filename : (msg.document && msg.document.caption) ? msg.document.caption : "Document";
       
       if (docMime.includes("pdf") || docName.toLowerCase().endsWith(".pdf")) {
         messageType = "pdf";

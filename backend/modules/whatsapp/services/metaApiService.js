@@ -44,10 +44,11 @@ const fetchAndStoreMetaMedia = async (metaMediaId, fallbackType = "image", origi
       return { url: "", mimeType, fileSize, fileName: originalFileName };
     }
 
-    // Step 2: Download binary data from Meta download URL with Bearer token
+    // Step 2: Download binary data from Meta download URL with Bearer token & browser User-Agent
     const fileRes = await fetch(downloadUrl, {
       headers: {
-        Authorization: `Bearer ${token}`
+        "Authorization": `Bearer ${token}`,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
       }
     });
 
@@ -63,7 +64,7 @@ const fetchAndStoreMetaMedia = async (metaMediaId, fallbackType = "image", origi
     const cloudinaryResult = await new Promise((resolve, reject) => {
       let resourceType = "auto";
       if (mimeType.startsWith("video/")) resourceType = "video";
-      else if (mimeType.startsWith("image/")) resourceType = "image";
+      else if (mimeType.startsWith("image/") || mimeType.includes("webp") || fallbackType === "sticker") resourceType = "image";
       else if (mimeType.startsWith("audio/")) resourceType = "video"; // Cloudinary treats audio as video resource type
       else resourceType = "raw";
 

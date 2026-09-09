@@ -77,6 +77,21 @@ const MessageBubble = ({ message, onReply }) => {
     setShowReactionPicker(false);
   };
 
+  // Document detection
+  const isDoc =
+    msgType === "document" ||
+    msgType === "pdf" ||
+    (fileName && (fileName.toLowerCase().endsWith(".pdf") || fileName.toLowerCase().endsWith(".docx") || fileName.toLowerCase().endsWith(".xlsx") || fileName.toLowerCase().endsWith(".txt") || fileName.toLowerCase().endsWith(".zip"))) ||
+    (message.text && message.text.toLowerCase().includes("[document"));
+
+  // Sticker detection
+  const isSticker = msgType === "sticker" || (message.text && message.text.toLowerCase().includes("[sticker]"));
+
+  let cleanText = displayText;
+  if (!cleanText && !hasValidUrl && !isDoc && !isVoiceNote && !isSticker && msgType !== "image" && msgType !== "video") {
+    cleanText = message.text && !message.text.startsWith("[") ? message.text : "";
+  }
+
   const renderStatusTicks = () => {
     if (isCustomer) return null;
 
@@ -177,11 +192,28 @@ const MessageBubble = ({ message, onReply }) => {
             </div>
           )}
 
-          {/* Media Content Renderers */}
-          {hasValidUrl && (
+          {/* 1. Sticker Rendering */}
+          {isSticker && (
+            <div className="p-2 flex items-center justify-center">
+              {hasValidUrl ? (
+                <img
+                  src={rawUrl}
+                  alt="Sticker"
+                  className="w-32 h-32 object-contain hover:scale-105 transition"
+                />
+              ) : (
+                <div className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 rounded-2xl text-xs font-semibold">
+                  <span className="text-2xl">🏷️</span>
+                  <span>WhatsApp Sticker</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. Image Rendering */}
+          {msgType === "image" && !isSticker && (
             <div className="p-1.5">
-              {/* Image Message */}
-              {msgType === "image" && (
+              {hasValidUrl ? (
                 <div className="relative group/media overflow-hidden rounded-xl bg-black/5 dark:bg-white/5">
                   {!imageLoaded && (
                     <div className="w-full h-48 animate-pulse bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center text-xs text-slate-400">
@@ -205,10 +237,22 @@ const MessageBubble = ({ message, onReply }) => {
                     <span>View</span>
                   </button>
                 </div>
+              ) : (
+                <div className="flex items-center gap-2.5 p-3 bg-black/5 dark:bg-white/5 rounded-xl text-xs">
+                  <span className="text-xl">📷</span>
+                  <div className="truncate">
+                    <p className="font-bold truncate">{fileName || "WhatsApp Photo"}</p>
+                    <p className="text-[10px] text-slate-500">Site Inspection Photo</p>
+                  </div>
+                </div>
               )}
+            </div>
+          )}
 
-              {/* Video Message */}
-              {msgType === "video" && (
+          {/* 3. Video Rendering */}
+          {msgType === "video" && (
+            <div className="p-1.5">
+              {hasValidUrl ? (
                 <div className="rounded-xl overflow-hidden bg-black/10 dark:bg-black/30">
                   <video
                     src={rawUrl}
@@ -220,32 +264,46 @@ const MessageBubble = ({ message, onReply }) => {
                     Your browser does not support the video tag.
                   </video>
                 </div>
-              )}
-
-              {/* Voice Note / Audio Message */}
-              {isVoiceNote && (
-                <WhatsAppVoicePlayer
-                  audioUrl={rawUrl}
-                  isCustomer={isCustomer}
-                  time={time}
-                  senderName={senderName}
-                />
-              )}
-
-              {/* Document / PDF Message */}
-              {(msgType === "document" || msgType === "pdf") && (
-                <div className="p-3 rounded-xl bg-black/5 dark:bg-black/20 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-lg shrink-0">
-                    {fileName.toLowerCase().endsWith(".pdf") ? "📄" : "📁"}
+              ) : (
+                <div className="flex items-center gap-2.5 p-3 bg-black/5 dark:bg-white/5 rounded-xl text-xs">
+                  <span className="text-xl">🎥</span>
+                  <div className="truncate">
+                    <p className="font-bold truncate">{fileName || "WhatsApp Video"}</p>
+                    <p className="text-[10px] text-slate-500">Site Video Recording</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {fileName}
-                    </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      {fileSize ? fileSize : "Document"}
-                    </p>
-                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. Voice Note / Audio Rendering */}
+          {isVoiceNote && (
+            <div className="p-1.5">
+              <WhatsAppVoicePlayer
+                audioUrl={hasValidUrl ? rawUrl : ""}
+                isCustomer={isCustomer}
+                time={time}
+                senderName={senderName}
+              />
+            </div>
+          )}
+
+          {/* 5. Document / PDF Rendering (ALWAYS VISIBLE!) */}
+          {isDoc && (
+            <div className="p-2">
+              <div className="p-3 rounded-xl bg-black/5 dark:bg-black/20 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-lg shrink-0">
+                  {fileName.toLowerCase().endsWith(".pdf") ? "📄" : fileName.toLowerCase().endsWith(".xls") || fileName.toLowerCase().endsWith(".xlsx") ? "📊" : "📁"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {fileName && fileName !== "Attachment" ? fileName : message.text?.replace(/^\[Document:\s*|\]$/gi, "") || "Document"}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {fileSize ? fileSize : "WhatsApp Attachment"}
+                  </p>
+                </div>
+                {hasValidUrl && (
                   <a
                     href={rawUrl}
                     target="_blank"
@@ -256,26 +314,16 @@ const MessageBubble = ({ message, onReply }) => {
                   >
                     <Download className="h-3.5 w-3.5" />
                   </a>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
-          {/* Voice Note without valid direct URL fallback */}
-          {!hasValidUrl && isVoiceNote && (
-            <WhatsAppVoicePlayer
-              audioUrl=""
-              isCustomer={isCustomer}
-              time={time}
-              senderName={senderName}
-            />
-          )}
-
-          {/* Text / Caption */}
-          {displayText && (
+          {/* 6. Text / Caption */}
+          {cleanText && (
             <div className="px-3.5 py-1.5">
               <p className="whitespace-pre-wrap leading-relaxed break-words text-[13.5px]">
-                {displayText}
+                {cleanText}
               </p>
             </div>
           )}
