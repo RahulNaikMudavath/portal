@@ -10,7 +10,6 @@ import CompleteProfile from "./pages/CompleteProfile";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import PageLoader from "./components/common/PageLoader";
 import OfflineStatusBar from "./components/common/OfflineStatusBar";
-import PwaInstallPrompt from "./components/common/PwaInstallPrompt";
 import GlobalCommandPalette from "./components/common/GlobalCommandPalette";
 
 // Lazy-loaded Admin pages
@@ -44,7 +43,6 @@ function App() {
         <WorkRequestProvider>
           <BrowserRouter>
             <OfflineStatusBar />
-            <PwaInstallPrompt />
             <GlobalCommandPalette />
             <Suspense fallback={<PageLoader />}>
               <Routes>
