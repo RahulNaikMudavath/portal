@@ -1,7 +1,8 @@
-import { getCustomerDisplayName } from "../../services/whatsappService";
+import { getCustomerDisplayName, getPresenceStatus } from "../../services/whatsappService";
 import { Check, CheckCheck, Camera, Mic, FileText, Video } from "lucide-react";
 
 const ChatCard = ({ chat, selected, onSelect }) => {
+  const presence = getPresenceStatus(chat);
   const normalizeDigits = (val) => String(val || "").replace(/\D/g, "");
   const selectedPhone = normalizeDigits(selected?.phoneNumber || selected?.conversationId || selected?._id);
   const chatPhone = normalizeDigits(chat?.phoneNumber || chat?.conversationId || chat?._id);
@@ -96,6 +97,9 @@ const ChatCard = ({ chat, selected, onSelect }) => {
             alt={displayName}
             className="w-12 h-12 rounded-full shadow-xs object-cover"
           />
+          {presence.isOnline && (
+            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#00a884] ring-2 ring-white dark:ring-[#111b21]" />
+          )}
         </div>
 
         {/* Info Column */}

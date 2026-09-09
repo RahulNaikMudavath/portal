@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { getCustomerDisplayName } from "../../services/whatsappService";
+import { useState, useEffect } from "react";
+import { getCustomerDisplayName, getPresenceStatus } from "../../services/whatsappService";
 import CustomerSimulatorModal from "./CustomerSimulatorModal";
 import { Search, Bot, Phone, Video, MoreVertical, X } from "lucide-react";
 
@@ -7,6 +7,17 @@ const ChatHeader = ({ chat, searchQuery = "", onSearchChange }) => {
   const [showSimulator, setShowSimulator] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
+  // Live presence state (auto-refreshed periodically)
+  const [presence, setPresence] = useState(() => getPresenceStatus(chat));
+
+  useEffect(() => {
+    setPresence(getPresenceStatus(chat));
+    const interval = setInterval(() => {
+      setPresence(getPresenceStatus(chat));
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [chat?._id, chat?.conversationId, chat?.lastMessageAt, chat?.updatedAt, chat?.messages?.length]);
 
   if (!chat) return null;
 
@@ -26,7 +37,9 @@ const ChatHeader = ({ chat, searchQuery = "", onSearchChange }) => {
               alt={displayName}
               className="w-10 h-10 rounded-full shadow-sm object-cover"
             />
-            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#202c33]" />
+            {presence.isOnline && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#00a884] ring-2 ring-white dark:ring-[#202c33]" />
+            )}
           </div>
 
           <div>
@@ -38,10 +51,17 @@ const ChatHeader = ({ chat, searchQuery = "", onSearchChange }) => {
               <span className="font-mono text-[11px] text-slate-400 dark:text-slate-400">
                 {phone}
               </span>
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                online
-              </span>
+              <span className="text-slate-300 dark:text-slate-700 text-[10px]">•</span>
+              {presence.isOnline ? (
+                <span className="text-[11px] text-[#00a884] dark:text-[#00a884] font-semibold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00a884] animate-pulse" />
+                  online
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-500 dark:text-[#8696a0] font-normal">
+                  {presence.text}
+                </span>
+              )}
             </div>
           </div>
         </div>
