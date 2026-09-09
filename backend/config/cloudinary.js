@@ -33,6 +33,11 @@ const api_secret = !isInvalid(process.env.CLOUDINARY_API_SECRET)
   ? process.env.CLOUDINARY_API_SECRET.trim()
   : "ZpKWjI92r58zbekjsBBqliiB5MQ";
 
+// Ensure process.env is updated globally so any nested sub-packages also use valid keys
+process.env.CLOUDINARY_CLOUD_NAME = cloud_name;
+process.env.CLOUDINARY_API_KEY = api_key;
+process.env.CLOUDINARY_API_SECRET = api_secret;
+
 cloudinary.config({
   cloud_name,
   api_key,
