@@ -53,23 +53,24 @@ function Login() {
         }
       }
     } catch (error) {
-      console.error("Google login error:", error);
-      alert(error.response?.data?.message || "Google Authentication failed.");
+      console.error("Google login backend error:", error);
+      const msg = error.response?.data?.message || error.response?.data?.error || (error.message === "Network Error" ? "Unable to connect to the backend server. Please retry in a few seconds." : "Google Authentication failed.");
+      alert(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // Official Google OAuth hook
+  // Official Google OAuth hook with account selector
   const loginWithGoogle = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       handleGoogleLoginSuccess(tokenResponse.access_token);
     },
     onError: (err) => {
-      console.error("Google Auth failed:", err);
-      // Failover to sandbox
+      console.error("Google Auth popup error:", err);
       setShowSandboxGoogle(true);
-    }
+    },
+    prompt: "select_account"
   });
 
   const handleGoogleClick = () => {
@@ -142,7 +143,8 @@ function Login() {
         navigate("/client/dashboard");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Login failed. Check your credentials.");
+      const msg = error.response?.data?.message || error.response?.data?.error || (error.message === "Network Error" ? "Backend server is waking up or unreachable. Please retry in a moment." : "Login failed. Check your credentials.");
+      alert(msg);
     } finally {
       setLoading(false);
     }

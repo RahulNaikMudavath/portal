@@ -12,7 +12,8 @@ const app = express();
 // Security Headers
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
   })
 );
 
@@ -21,12 +22,19 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   "http://localhost:5173",
   "http://localhost:3000",
-  "http://localhost:5001"
+  "http://localhost:5001",
+  "https://portalramesh.vercel.app"
 ].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+    if (
+      !origin ||
+      allowedOrigins.indexOf(origin) !== -1 ||
+      origin.endsWith(".vercel.app") ||
+      origin.includes("localhost") ||
+      process.env.NODE_ENV !== "production"
+    ) {
       callback(null, true);
     } else {
       callback(new Error("CORS policy violation: Origin not allowed"));

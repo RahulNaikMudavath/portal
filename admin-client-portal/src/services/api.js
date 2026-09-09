@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5001",
+  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://constructai-backend-ikqh.onrender.com" : "http://localhost:5001"),
 });
 
 const CACHE_PREFIX = "PF_OFFLINE_CACHE_";
