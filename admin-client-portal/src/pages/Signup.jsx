@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signup } from "../services/authService";
 import { motion } from "framer-motion";
-import { UserPlus, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import API from "../services/api";
 
@@ -159,9 +159,18 @@ function Signup() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="md:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-center relative overflow-hidden"
         >
-          <div className="mb-6 space-y-0.5">
-            <h3 className="text-lg font-bold text-white">Create Account</h3>
-            <p className="text-xs text-slate-400">Fill in the fields below or sign up instantly with Google.</p>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h3 className="text-lg font-bold text-white">Create Account</h3>
+              <p className="text-xs text-slate-400">Fill in the fields below or sign up instantly with Google.</p>
+            </div>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-white text-xs font-semibold transition"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Home</span>
+            </Link>
           </div>
 
           <div className="space-y-4 text-xs text-slate-400">
@@ -277,13 +286,16 @@ function Signup() {
               </div>
             </form>
 
-            <div className="mt-6 text-center text-xs border-t border-slate-800/80 pt-4">
+            <div className="mt-6 text-center text-xs border-t border-slate-800/80 pt-4 flex items-center justify-between">
               <p className="text-slate-400">
                 Already have an account?{" "}
-                <Link to="/" className="text-indigo-400 font-bold hover:underline">
+                <Link to="/login" className="text-indigo-400 font-bold hover:underline">
                   Sign In
                 </Link>
               </p>
+              <Link to="/" className="text-[11px] text-amber-400 hover:underline">
+                Explore Services & Approvals →
+              </Link>
             </div>
           </div>
 

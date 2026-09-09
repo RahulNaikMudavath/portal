@@ -7,7 +7,7 @@ function ProtectedRoute({ children, role }) {
   const [user, setUser] = useState(storedUser ? JSON.parse(storedUser) : null);
 
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (user && user.isOnboarded === false) {
@@ -15,7 +15,7 @@ function ProtectedRoute({ children, role }) {
   }
 
   if (role && user.role !== role) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   const handlePasswordResetSuccess = (updatedUser) => {
