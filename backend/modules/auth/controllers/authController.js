@@ -191,7 +191,8 @@ exports.changePassword = async (req, res) => {
 
 // 🌐 GOOGLE AUTH LOGIN / REGISTRATION
 const { OAuth2Client } = require("google-auth-library");
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClientId = process.env.GOOGLE_CLIENT_ID || "424801162325-iels65aul66abevo03u0jgjviou3i8r1.apps.googleusercontent.com";
+const googleClient = new OAuth2Client(googleClientId);
 
 exports.googleLogin = async (req, res) => {
   try {
@@ -233,10 +234,11 @@ exports.googleLogin = async (req, res) => {
       // JWT ID token: verify using Google client library
       const ticket = await googleClient.verifyIdToken({
         idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: googleClientId,
       });
       payload = ticket.getPayload();
     }
+
 
     if (!payload || !payload.email) {
       return res.status(400).json({ message: "Invalid Google token payload" });

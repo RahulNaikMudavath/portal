@@ -35,7 +35,7 @@ const ProjectsWorkspace = React.lazy(() => import("./pages/shared/ProjectsWorksp
 const DocumentCenter = React.lazy(() => import("./pages/shared/DocumentCenter"));
 const ProjectCalendar = React.lazy(() => import("./pages/shared/ProjectCalendar"));
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "1073860000000-dummygoogleclientidfortesting.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "424801162325-iels65aul66abevo03u0jgjviou3i8r1.apps.googleusercontent.com";
 
 function App() {
   return (
