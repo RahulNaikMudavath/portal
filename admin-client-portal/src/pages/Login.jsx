@@ -73,6 +73,10 @@ function Login() {
   });
 
   const handleGoogleClick = () => {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("dummy") || GOOGLE_CLIENT_ID.includes("your_google")) {
+      setShowSandboxGoogle(true);
+      return;
+    }
     loginWithGoogle();
   };
 
