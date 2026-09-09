@@ -11,7 +11,8 @@ const {
   metaReceiveWebhook,
   sendMessage,
   sendMedia,
-  simulateIncoming
+  simulateIncoming,
+  markConversationAsRead
 } = require("../controllers/whatsappController");
 
 // Official Meta WhatsApp Cloud API Webhooks (Public for Meta verification and webhook events)
@@ -23,6 +24,8 @@ router.post("/send", protect, isAdmin, sendMessage);
 router.post("/send-media", protect, isAdmin, upload.single("file"), sendMedia);
 router.post("/simulate-incoming", protect, isAdmin, simulateIncoming);
 router.get("/conversations", protect, isAdmin, getConversations);
+router.patch("/conversations/:id/read", protect, isAdmin, markConversationAsRead);
+router.post("/conversations/:id/read", protect, isAdmin, markConversationAsRead);
 
 module.exports = router;
 

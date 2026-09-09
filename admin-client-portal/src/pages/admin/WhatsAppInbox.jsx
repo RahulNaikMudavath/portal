@@ -5,7 +5,7 @@ import ChatSidebar from "../../components/whatsapp/ChatSidebar";
 import ChatWindow from "../../components/whatsapp/ChatWindow";
 import AISummaryPanel from "../../components/whatsapp/AISummaryPanel";
 
-import { getConversations, sendMessage as sendWhatsAppApi, sendMediaMessage as sendWhatsAppMediaApi } from "../../services/whatsappService";
+import { getConversations, sendMessage as sendWhatsAppApi, sendMediaMessage as sendWhatsAppMediaApi, markConversationAsRead } from "../../services/whatsappService";
 import socket from "../../socket";
 import { playMessageSound } from "../../utils/soundEffects";
 
@@ -22,17 +22,66 @@ function WhatsAppInbox() {
     const loadChats = async () => {
         try {
             const data = await getConversations();
-            setChats(data);
+            const currentSelected = selectedChatRef.current;
 
-            // If we have a selected chat, refresh its reference with latest data
-            if (selectedChatRef.current) {
-                const refreshed = data.find(c => c._id === selectedChatRef.current._id);
+            // If a chat is currently open and active, ensure its unread count is zeroed in local state
+            const normalizedData = data.map(c => {
+                if (currentSelected && (c._id === currentSelected._id || (c.conversationId && c.conversationId === currentSelected.conversationId))) {
+                    return { ...c, unreadCount: 0, unread: 0 };
+                }
+                return c;
+            });
+
+            setChats(normalizedData);
+
+            if (currentSelected) {
+                const refreshed = normalizedData.find(c => c._id === currentSelected._id || (c.conversationId && c.conversationId === currentSelected.conversationId));
                 if (refreshed) setSelectedChat(refreshed);
             }
         } catch (err) {
             console.error("Failed to load WhatsApp conversations:", err);
         }
     };
+
+    const handleSelectChat = async (chat) => {
+        if (!chat) return;
+
+        // 1. Immediately zero out unread badge in UI state
+        setSelectedChat(chat);
+        setChats(prevChats =>
+            prevChats.map(c => {
+                const isMatch =
+                    (c._id && (c._id === chat._id || c._id === chat.conversationId)) ||
+                    (c.conversationId && (c.conversationId === chat.conversationId || c.conversationId === chat._id));
+                if (isMatch) {
+                    return { ...c, unreadCount: 0, unread: 0 };
+                }
+                return c;
+            })
+        );
+
+        // 2. Persist read status to MongoDB backend
+        const unread = chat.unreadCount || chat.unread || 0;
+        const targetId = chat._id || chat.conversationId;
+        if (unread > 0 && targetId) {
+            try {
+                await markConversationAsRead(targetId);
+            } catch (err) {
+                console.warn("Failed to mark conversation as read on server:", err);
+            }
+        }
+    };
+
+    // Automatically mark selected chat as read if it arrives with unread messages
+    useEffect(() => {
+        if (selectedChat) {
+            const unread = selectedChat.unreadCount || selectedChat.unread || 0;
+            const targetId = selectedChat._id || selectedChat.conversationId;
+            if (unread > 0 && targetId) {
+                markConversationAsRead(targetId).catch(() => {});
+            }
+        }
+    }, [selectedChat?._id, selectedChat?.conversationId]);
 
     useEffect(() => {
         loadChats();
@@ -115,7 +164,7 @@ function WhatsAppInbox() {
                         <ChatSidebar
                             chats={chats}
                             selected={selectedChat}
-                            onSelect={setSelectedChat}
+                            onSelect={handleSelectChat}
                         />
                     </div>
 

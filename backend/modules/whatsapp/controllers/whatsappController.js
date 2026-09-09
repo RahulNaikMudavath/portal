@@ -106,7 +106,7 @@ const getConversations = async (req, res) => {
       grouped[msg.conversationId].lastMessage = msg.text;
       grouped[msg.conversationId].lastTime = msg.createdAt;
 
-      if (msg.direction === "incoming") {
+      if (msg.direction === "incoming" && msg.status !== "read") {
         grouped[msg.conversationId].unread++;
       }
     });
@@ -354,12 +354,75 @@ const simulateIncoming = async (req, res) => {
   }
 };
 
+/**
+ * 👁️ Mark Conversation as Read (PATCH /api/whatsapp/conversations/:id/read)
+ */
+const markConversationAsRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ message: "Conversation ID is required" });
+    }
+
+    let query = { conversationId: id };
+    const mongoose = require("mongoose");
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { $or: [{ _id: id }, { conversationId: id }] };
+    }
+
+    const conversation = await WhatsAppConversation.findOne(query);
+
+    if (conversation) {
+      conversation.unreadCount = 0;
+      await conversation.save();
+
+      // Mark all incoming messages as read
+      await WhatsappMessage.updateMany(
+        {
+          $or: [
+            { conversation: conversation._id },
+            { conversationId: conversation.conversationId }
+          ],
+          direction: "incoming",
+          status: { $ne: "read" }
+        },
+        { $set: { status: "read" } }
+      );
+
+      const io = req.app.get("io");
+      if (io) {
+        emitWhatsAppEvents(io, null, conversation);
+      }
+
+      return res.json({
+        message: "Conversation marked as read",
+        conversation
+      });
+    }
+
+    // Fallback if no conversation document exists yet
+    await WhatsappMessage.updateMany(
+      {
+        conversationId: id,
+        direction: "incoming"
+      },
+      { $set: { status: "read" } }
+    );
+
+    res.json({ message: "Messages marked as read" });
+  } catch (err) {
+    console.error("Error marking conversation as read:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getConversations,
   metaVerifyWebhook,
   metaReceiveWebhook,
   sendMessage,
   sendMedia,
-  simulateIncoming
+  simulateIncoming,
+  markConversationAsRead
 };
 

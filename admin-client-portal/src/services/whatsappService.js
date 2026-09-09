@@ -24,6 +24,17 @@ export const simulateIncomingMessage = async (data) => {
     return res.data;
 };
 
+export const markConversationAsRead = async (conversationId) => {
+    if (!conversationId) return null;
+    try {
+        const res = await API.patch(`/api/whatsapp/conversations/${conversationId}/read`);
+        return res.data;
+    } catch (err) {
+        const res = await API.post(`/api/whatsapp/conversations/${conversationId}/read`);
+        return res.data;
+    }
+};
+
 
 export const getCustomerDisplayName = (chat) => {
     if (!chat) return "Customer";
