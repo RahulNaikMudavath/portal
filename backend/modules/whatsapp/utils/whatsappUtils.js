@@ -3,10 +3,10 @@
  */
 const getWhatsAppConfig = () => {
   return {
-    token: process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || "",
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
-    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || "admin_portal_whatsapp_token",
-    apiVersion: process.env.GRAPH_API_VERSION || process.env.WHATSAPP_API_VERSION || "v21.0"
+    token: process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_TOKEN || "EAARapshvInMBSaIZCVqZBkZAXiViibyzGeAg2WVbHd2kvfG9QAyfeA6DTLuPhYwR8U0ZCxRsl2XTRb9KYy67gpNtZCsDnp0uqExCoQEXrXhdiozPShJ9UWVTs7UAPHpEEVpdAZBD06oB47KsnzXZCLxTq56e9mglWwW8MLlExUOOZAs1v1wS19WuDeWCNv5hVwZDZD",
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "1347484401774177",
+    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || "constructai_verify_token",
+    apiVersion: process.env.GRAPH_API_VERSION || process.env.WHATSAPP_API_VERSION || "v23.0"
   };
 };
 
