@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm --prefix admin-client-portal run build",
+  "installCommand": "cd admin-client-portal && npm install",
+  "buildCommand": "cd admin-client-portal && npm run build",
   "outputDirectory": "admin-client-portal/dist",
   "framework": "vite",
   "rewrites": [
